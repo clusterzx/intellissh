@@ -1,0 +1,339 @@
+/* XTerm CSS */
+@import 'xterm/css/xterm.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+@layer base {
+  html {
+    @apply antialiased text-gray-900 dark:text-gray-100 transition-colors duration-200;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-slate-50 dark:bg-slate-900 transition-colors duration-200;
+  }
+  
+  /* Improve focus styles for better accessibility */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-indigo-500 dark:outline-indigo-400;
+  }
+  
+  /* Default transition for interactive elements */
+  a, button, input, select, textarea {
+    @apply transition-all duration-200;
+  }
+  
+  /* Headings */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-medium tracking-tight;
+  }
+  
+  /* Code blocks */
+  code {
+    @apply font-mono text-sm;
+  }
+  
+  /* Make sure terminal text is crisp */
+  .xterm {
+    font-smoothing: never;
+    -webkit-font-smoothing: never;
+  }
+}
+
+/* Components */
+@layer components {
+  /* Button styles */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg 
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 
+           disabled:opacity-60 disabled:cursor-not-allowed 
+           shadow-sm transition-all duration-200;
+  }
+  
+  .btn-primary {
+    @apply btn bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800 
+           focus-visible:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600 
+           dark:active:bg-indigo-700 dark:focus-visible:ring-indigo-400;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-slate-800 text-white hover:bg-slate-700 active:bg-slate-600 
+           focus-visible:ring-slate-500 dark:bg-slate-700 dark:hover:bg-slate-600 
+           dark:active:bg-slate-500 dark:focus-visible:ring-slate-400;
+  }
+  
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 active:bg-red-800 
+           focus-visible:ring-red-500 dark:bg-red-500 dark:hover:bg-red-600 
+           dark:active:bg-red-700 dark:focus-visible:ring-red-400;
+  }
+  
+  .btn-outline {
+    @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 
+           active:bg-slate-100 focus-visible:ring-slate-500
+           dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 
+           dark:hover:bg-slate-700 dark:active:bg-slate-600 dark:focus-visible:ring-slate-400;
+  }
+  
+  .btn-ghost {
+    @apply btn text-slate-700 hover:bg-slate-100 active:bg-slate-200 
+           dark:text-slate-300 dark:hover:bg-slate-800 dark:active:bg-slate-700;
+  }
+  
+  /* Form elements */
+  .form-input {
+    @apply block w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg 
+           shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 
+           focus:border-indigo-500
+           dark:bg-slate-800 dark:border-slate-600 dark:placeholder-slate-500 
+           dark:text-slate-300 dark:focus:border-indigo-500;
+  }
+  
+  .form-label {
+    @apply block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1;
+  }
+  
+  .form-error {
+    @apply mt-1 text-sm text-red-600 dark:text-red-400;
+  }
+  
+  /* Card components */
+  .card {
+    @apply bg-white dark:bg-slate-800 overflow-hidden shadow-soft rounded-xl 
+           border border-slate-200 dark:border-slate-700 transition-all duration-200;
+  }
+  
+  .card-header {
+    @apply px-4 py-5 sm:px-6 border-b border-slate-200 dark:border-slate-700;
+  }
+  
+  .card-body {
+    @apply px-4 py-5 sm:p-6;
+  }
+  
+  .card-footer {
+    @apply px-4 py-4 sm:px-6 border-t border-slate-200 dark:border-slate-700;
+  }
+  
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-primary {
+    @apply badge bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200;
+  }
+  
+  .badge-secondary {
+    @apply badge bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200;
+  }
+  
+  .badge-success {
+    @apply badge bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
+  }
+  
+  .badge-danger {
+    @apply badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
+  }
+  
+  .badge-warning {
+    @apply badge bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200;
+  }
+  
+  /* Panels and containers */
+  .content-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .panel {
+    @apply bg-white dark:bg-slate-800 rounded-xl shadow-soft p-4 sm:p-6;
+  }
+}
+
+/* Utilities */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Glass effect */
+  .bg-glass {
+    @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-white/20 dark:border-slate-700/30;
+  }
+  
+  /* Ring utilities */
+  .ring-focus {
+    @apply ring-2 ring-indigo-500 ring-offset-2 dark:ring-indigo-400 dark:ring-offset-slate-900;
+  }
+  
+  /* Shadow variants */
+  .shadow-soft {
+    @apply shadow-[0_2px_10px_0_rgba(0,0,0,0.05)] dark:shadow-[0_2px_10px_0_rgba(0,0,0,0.3)];
+  }
+  
+  .shadow-button {
+    @apply shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] dark:shadow-[0_1px_3px_0_rgba(0,0,0,0.3)];
+  }
+}
+
+/* Terminal styles */
+.terminal-container {
+  @apply w-full h-full bg-terminal-bg dark:bg-terminal-bgDark transition-colors duration-200;
+}
+
+.terminal-container .xterm {
+  @apply h-full;
+}
+
+.terminal-container .xterm-viewport {
+  @apply bg-terminal-bg dark:bg-terminal-bgDark transition-colors duration-200;
+}
+
+.terminal-container .xterm-screen {
+  @apply bg-terminal-bg dark:bg-terminal-bgDark transition-colors duration-200;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: theme('colors.slate.400') theme('colors.slate.100');
+}
+
+.dark .custom-scrollbar {
+  scrollbar-color: theme('colors.slate.600') theme('colors.slate.800');
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  @apply w-1.5;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-slate-100 dark:bg-slate-800 rounded-full;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-slate-400 dark:bg-slate-600 rounded-full hover:bg-slate-500 dark:hover:bg-slate-500 transition-colors duration-200;
+}
+
+/* Loading spinner */
+.spinner {
+  @apply inline-block w-4 h-4 border-2 border-current border-r-transparent rounded-full animate-spin text-indigo-500 dark:text-indigo-400;
+}
+
+/* Animation for fade transitions */
+.fade-enter-active,
+.fade-leave-active {
+  @apply transition-opacity duration-200;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  @apply opacity-0;
+}
+
+/* Slide animations */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  @apply transition-all duration-200 ease-out;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  @apply transform translate-y-4 opacity-0;
+}
+
+/* Connection status indicator */
+.status-indicator {
+  @apply inline-block w-2.5 h-2.5 rounded-full transition-colors duration-200 relative;
+}
+
+.status-indicator::after {
+  content: '';
+  @apply absolute inset-0 rounded-full animate-ping opacity-75;
+}
+
+.status-connected {
+  @apply bg-green-500 dark:bg-green-400;
+}
+
+.status-connected::after {
+  @apply bg-green-500 dark:bg-green-400;
+  animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.status-disconnected {
+  @apply bg-red-500 dark:bg-red-400;
+}
+
+.status-connecting {
+  @apply bg-amber-500 dark:bg-amber-400;
+}
+
+.status-connecting::after {
+  @apply bg-amber-500 dark:bg-amber-400;
+  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Responsive utilities */
+@media (max-width: 640px) {
+  .mobile-hide {
+    @apply hidden;
+  }
+}
+
+/* Responsive typography */
+@media (min-width: 768px) {
+  html {
+    font-size: 16.5px;
+  }
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: 17px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    @apply hidden;
+  }
+  
+  body {
+    @apply text-black bg-white;
+  }
+}
+
+/* Dark mode toggle animation */
+.dark-mode-toggle {
+  @apply relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer transition-colors duration-300 ease-in-out;
+}
+
+.dark-mode-toggle__handle {
+  @apply inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-300 ease-in-out;
+}
+
+.dark-mode-toggle__handle--day {
+  @apply translate-x-5;
+}
+
+.dark-mode-toggle__handle--night {
+  @apply translate-x-0;
+}
+
+.dark-mode-toggle__icon {
+  @apply absolute top-1/2 -translate-y-1/2 text-yellow-400 dark:text-slate-300;
+}
+
+.dark-mode-toggle__icon--sun {
+  @apply left-1;
+}
+
+.dark-mode-toggle__icon--moon {
+  @apply right-1;
+}
