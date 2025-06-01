@@ -7,6 +7,9 @@ A secure and user-friendly web app for managing Linux servers with Artifical Int
 
 ![preview](https://github.com/clusterzx/intellissh/blob/master/preview.gif)
 
+## IMPORTANT
+The default Admin credentials are shown on first startup in the Docker Logs!
+
 ## 🚀 Overview
 
 IntelliSSH helps system administrators and developers access and control remote Linux servers with:
