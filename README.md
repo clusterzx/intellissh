@@ -1,6 +1,6 @@
 # 📡 IntelliSSH
 
-A secure and user-friendly web app for managing Linux servers via SSH—right from your browser.
+A secure and user-friendly web app for managing Linux servers with Artifical Intelligence via SSH—right from your browser.
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![License](https://img.shields.io/badge/license-ISC-green)
