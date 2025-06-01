@@ -5,6 +5,7 @@ const socketIo = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 
 // Import services and middleware
 const db = require('./db/database');
@@ -101,31 +102,21 @@ app.use('/api/*', (req, res) => {
   });
 });
 
-// Serve static files from client build (for production)
 if (process.env.NODE_ENV === 'production') {
-  const path = require('path');
-  const clientBuildPath = path.join(__dirname, '../../client/dist');
+  let clientBuildPath = path.join(__dirname, '../public');
   
   app.use(express.static(clientBuildPath));
   
-  // Catch all handler for client-side routing
   app.get('*', (req, res) => {
     res.sendFile(path.join(clientBuildPath, 'index.html'));
   });
 } else {
-  // Development mode - just return API info
-  app.get('/', (req, res) => {
-    res.json({
-      message: 'IntelliSSH API',
-      version: '1.0.0',
-      environment: 'development',
-      endpoints: {
-        auth: '/api/auth',
-        sessions: '/api/sessions',
-        ssh: '/api/ssh',
-        health: '/health'
-      }
-    });
+  let clientBuildPath = path.join(__dirname, '../../client/dist');
+  
+  app.use(express.static(clientBuildPath));
+  
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
   });
 }
 
