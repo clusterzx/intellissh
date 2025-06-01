@@ -5,6 +5,8 @@ A secure and user-friendly web app for managing Linux servers via SSH—right fr
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![License](https://img.shields.io/badge/license-ISC-green)
 
+![preview](https://github.com/clusterzx/intellissh/blob/master/preview.gif)
+
 ## 🚀 Overview
 
 IntelliSSH helps system administrators and developers access and control remote Linux servers with:
