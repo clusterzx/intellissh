@@ -222,7 +222,10 @@ router.post('/forgot-password', async (req, res) => {
       });
     }
     
-    const result = await authService.requestPasswordReset(usernameOrEmail);
+    // Construct base URL dynamically from request
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    
+    const result = await authService.requestPasswordReset(usernameOrEmail, baseUrl);
     
     // Always return a success response for security
     // This way we don't reveal if a user exists or not

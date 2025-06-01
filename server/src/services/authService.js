@@ -224,7 +224,7 @@ class AuthService {
   }
 
   // Password reset methods
-  async requestPasswordReset(usernameOrEmail) {
+  async requestPasswordReset(usernameOrEmail, baseUrl) {
     try {
       // Find user by username or email
       const user = await db.get(
@@ -253,8 +253,7 @@ class AuthService {
         [resetToken, expiresAt.toISOString(), user.id]
       );
 
-      // Generate reset link
-      const baseUrl = process.env.BASE_URL || 'http://localhost:8080';
+      // Generate reset link using dynamic baseUrl
       const resetLink = `${baseUrl}/reset-password/${resetToken}`;
 
       // Send email with reset link

@@ -15,7 +15,9 @@ class EmailService {
       const smtpUser = await settingsService.getSettingValue('smtp_user') || '';
       const smtpPass = await settingsService.getSettingValue('smtp_password') || '';
       const emailFrom = await settingsService.getSettingValue('email_from') || 'noreply@webssh.example.com';
-      
+
+      console.log(`Initializing EmailService with SMTP host: ${smtpHost}, port: ${smtpPort}`);
+
       // Create transporter
       this.transporter = nodemailer.createTransport({
         host: smtpHost,
@@ -26,10 +28,10 @@ class EmailService {
           pass: smtpPass,
         },
       });
-      
+
       this.emailFrom = emailFrom;
       this.initialized = true;
-      
+
       console.log('Email service initialized');
       return true;
     } catch (error) {
