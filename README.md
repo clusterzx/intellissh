@@ -38,7 +38,7 @@ Frontend (Vue) <--> Backend (Express)
 ### Development
 
 ```bash
-git clone <repo>
+git clone https://github.com/clusterzx/intellissh
 cd webssh-control
 
 # Backend
