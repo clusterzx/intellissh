@@ -7,8 +7,10 @@ A secure and user-friendly web app for managing Linux servers with Artifical Int
 
 ![preview](https://github.com/clusterzx/intellissh/blob/master/preview.gif)
 
-## IMPORTANT
+## IMPORTANT INFORMATION REGARDING CREDENTIALS:
 The default Admin credentials are shown on first startup in the Docker Logs!
+![image](https://github.com/user-attachments/assets/7807fbd3-c05e-4a8d-9625-0c1ede75232d)
+(Just sample credentials - different each deployment)
 
 ## 🚀 Overview
 
