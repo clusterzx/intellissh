@@ -54,11 +54,19 @@ cd client && npm install && npm run dev
 - API: http://localhost:3000  
 
 ### Production (Docker)
-
+# Run with port mapping (adjust ports as needed)
 ```bash
-docker-compose up -d
+ docker run -d -p 8080:8080 --name intellissh clusterzx/intellissh:latest
 ```
 
+# Run with volume mounts for persistence
+```bash
+docker run -d \
+  -p 8080:8080 \
+  -v $(pwd)/data:/app/server/data \
+  --name intellissh \
+  clusterzx/intellissh:latest
+```
 ## 📚 Documentation
 
 - **API**: REST endpoints for auth, sessions, and settings  
