@@ -7,6 +7,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
+# Install terser (required for Vite build)
+RUN npm install terser
+
 # Copy source code
 COPY . .
 
