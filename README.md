@@ -9,8 +9,15 @@ A secure and user-friendly web app for managing Linux servers with Artifical Int
 
 ## IMPORTANT INFORMATION REGARDING CREDENTIALS:
 The default Admin credentials are shown on first startup in the Docker Logs!
-(Image shown are just sample credentials - different each deployment)
-![image](https://github.com/user-attachments/assets/7807fbd3-c05e-4a8d-9625-0c1ede75232d)
+Sample:
+```
+========================================================
+INITIAL ADMIN ACCOUNT CREATED
+Username: admin
+Password: b99c192f24ba9e4f
+Please log in and change this password immediately!
+========================================================
+```
 
 ## 🚀 Overview
 
