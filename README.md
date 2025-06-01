@@ -49,7 +49,7 @@ Frontend (Vue) <--> Backend (Express)
 
 ## ⚡ Quick Start
 
-### Development
+### 🧪 Development
 
 ```bash
 git clone https://github.com/clusterzx/intellissh
@@ -62,16 +62,19 @@ cd server && npm install && cp .env.example .env && npm run dev
 cd client && npm install && npm run dev
 ```
 
-- Web: http://localhost:8080  
-- API: http://localhost:3000  
+- **Web**: [http://localhost:8080](http://localhost:8080)  
+- **API**: [http://localhost:3000](http://localhost:3000)
 
-### Production (Docker)
-# Run with port mapping (adjust ports as needed)
+---
+
+### 🚀 Production (Docker)
+
+#### Run with port mapping (adjust ports as needed)
 ```bash
- docker run -d -p 8080:8080 --name intellissh clusterzx/intellissh:latest
+docker run -d -p 8080:8080 --name intellissh clusterzx/intellissh:latest
 ```
 
-# Run with volume mounts for persistence
+#### Run with volume mounts for persistence
 ```bash
 docker run -d \
   -p 8080:8080 \
@@ -79,6 +82,23 @@ docker run -d \
   --name intellissh \
   clusterzx/intellissh:latest
 ```
+
+#### Docker Compose
+
+```yaml
+services:
+  intellissh:
+    image: clusterzx/intellissh:latest
+    container_name: intellissh
+    ports:
+      - 8080:8080
+    volumes:
+      # Mount for persistent backend data (SQLite DB, session info, etc.)
+      - ./data:/app/server/data
+    restart: unless-stopped
+```
+---
+
 ## 📚 Documentation
 
 - **API**: REST endpoints for auth, sessions, and settings  
