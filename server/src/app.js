@@ -32,26 +32,33 @@ const io = socketIo(server, {
   transports: ['websocket', 'polling']
 });
 
-// Basic security middleware with CSP configured for LAN compatibility
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:"],
-      connectSrc: ["'self'", "ws:", "wss:"],
-      // No upgrade-insecure-requests directive to allow HTTP in LAN environments
-    },
-  },
-  crossOriginEmbedderPolicy: false
-}));
+// HELMET IS COMPLETELY DISABLED - NO SECURITY HEADERS
+console.log('Running with NO security headers - Helmet is completely disabled');
 
-// CORS configuration - completely disabled for LAN compatibility
+// CORS configuration - completely disabled for compatibility
 app.use((req, res, next) => {
+  // Completely disable CORS restrictions
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+  
+  // Remove any security headers that might have been added elsewhere
+  // Remove CSP headers
+  res.removeHeader('Content-Security-Policy');
+  res.removeHeader('Content-Security-Policy-Report-Only');
+  
+  // Remove HTTPS enforcement headers
+  res.removeHeader('Strict-Transport-Security');
+  
+  // Remove cross-origin restriction headers
+  res.removeHeader('Cross-Origin-Opener-Policy');
+  res.removeHeader('Cross-Origin-Resource-Policy');
+  res.removeHeader('Cross-Origin-Embedder-Policy');
+  
+  // Remove other security headers that might interfere
+  res.removeHeader('X-Frame-Options');
+  res.removeHeader('X-XSS-Protection');
+  res.removeHeader('Origin-Agent-Cluster');
   
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
@@ -84,6 +91,15 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
   console.log(`${timestamp} ${req.method} ${req.path} - ${req.ip}`);
+  
+  // Add response header logging
+  const originalSend = res.send;
+  res.send = function(...args) {
+    // Log the headers being sent
+    console.log(`${timestamp} Response headers for ${req.method} ${req.path}:`, JSON.stringify(res.getHeaders()));
+    return originalSend.apply(res, args);
+  };
+  
   next();
 });
 
