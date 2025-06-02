@@ -91,7 +91,7 @@ services:
     image: clusterzx/intellissh:latest
     container_name: intellissh
     ports:
-      - 8080:8080
+      - 8080:3000
     volumes:
       # Mount for persistent backend data (SQLite DB, session info, etc.)
       - ./data:/app/server/data
