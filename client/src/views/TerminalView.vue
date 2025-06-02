@@ -83,11 +83,11 @@
             </button>
           </div>
           
-          <!-- Sidebar Toggle for Mobile -->
+          <!-- Sidebar Toggle for both Mobile and Desktop -->
           <button 
-            v-if="terminalStore.hasActiveSession && isMobile" 
+            v-if="terminalStore.hasActiveSession" 
             @click="showSidebar = !showSidebar"
-            class="md:hidden rounded-md p-1.5 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+            class="rounded-md p-1.5 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
             :aria-expanded="showSidebar"
             aria-controls="llm-sidebar"
           >
@@ -104,7 +104,7 @@
     <!-- Main Content Area - Split between Terminal and LLM Helper -->
     <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
       <!-- Terminal Container -->
-      <div class="flex-1 relative min-h-0" :class="{'md:w-full': showSidebar && isMobile}">
+      <div class="flex-1 relative min-h-0" :class="{'md:pr-96': showSidebar && !isMobile}">
         <!-- Loading State -->
         <div
           v-if="loading"
@@ -162,18 +162,19 @@
         ></div>
       </div>
 
-      <!-- LLM Helper Sidebar - For Desktop/Tablet -->
+      <!-- LLM Helper Sidebar -->
       <div 
         id="llm-sidebar"
         v-if="terminalStore.hasActiveSession" 
         :class="[
           'transition-all duration-300 ease-in-out overflow-hidden',
-          'md:w-96 md:border-l md:border-slate-700/50 dark:md:border-slate-800/80 md:flex-shrink-0 md:static',
-          showSidebar ? 'fixed inset-0 z-20 md:relative md:z-auto' : 'md:relative',
-          !showSidebar && isMobile ? 'hidden' : 'block'
+          'md:absolute md:top-0 md:bottom-0 md:right-0 md:border-l md:border-slate-700/50 dark:md:border-slate-800/80 md:shadow-lg',
+          'z-20',
+          showSidebar ? 'md:w-96 w-full visible' : 'md:w-0 w-0 invisible',
+          isMobile ? 'fixed inset-0' : ''
         ]"
       >
-        <div class="h-full overflow-auto bg-white dark:bg-slate-800 md:bg-transparent md:dark:bg-transparent">
+        <div class="h-full overflow-auto bg-white dark:bg-slate-800 md:bg-slate-100 md:dark:bg-slate-800">
           <LLMHelper />
         </div>
         
@@ -240,7 +241,7 @@ const loadingMessage = ref('')
 const error = ref('')
 const terminalReady = ref(false)
 const currentSession = ref(null)
-const showSidebar = ref(window.innerWidth >= 768) // Show by default on large screens
+const showSidebar = ref(false) // Start collapsed on all screen sizes
 const isMobile = ref(window.innerWidth < 768)
 
 // Computed session ID
@@ -305,7 +306,15 @@ const initializeTerminal = () => {
   terminal.value.loadAddon(webLinksAddon)
 
   terminal.value.open(terminalContainer.value)
-  fitAddon.value.fit()
+  
+  // Use nextTick to ensure the DOM has updated before fitting
+  nextTick(() => {
+    fitAddon.value.fit()
+    // Force a second fit after a short delay to ensure proper sizing
+    setTimeout(() => {
+      fitAddon.value.fit()
+    }, 100)
+  })
 
   // Set up terminal event handlers
   terminal.value.onData((data) => {
@@ -430,10 +439,7 @@ const handleResize = () => {
   
   // Update mobile state
   isMobile.value = window.innerWidth < 768
-  if (!isMobile.value) {
-    // Always show sidebar on desktop
-    showSidebar.value = true
-  }
+  // Keep sidebar state as is, don't force it to show on desktop anymore
 }
 
 // Watch for dark mode changes
@@ -443,6 +449,19 @@ watch(() => isDarkMode.value, () => {
     initializeTerminal()
   }
 }, { immediate: true })
+
+// Watch for sidebar toggle to resize terminal
+watch(() => showSidebar.value, () => {
+  if (fitAddon.value && terminalReady.value) {
+    // Use nextTick to ensure the DOM has updated before fitting
+    nextTick(() => {
+      // Small delay to ensure layout transition is complete
+      setTimeout(() => {
+        fitAddon.value.fit()
+      }, 350) // Match the sidebar transition duration (300ms) + small buffer
+    })
+  }
+})
 
 // Watchers
 watch(() => terminalStore.error, (newError) => {
