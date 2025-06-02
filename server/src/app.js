@@ -21,17 +21,18 @@ const { handleAuthError } = require('./middleware/authMiddleware');
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.IO
+// Initialize Socket.IO with permissive CORS for LAN compatibility
 const io = socketIo(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN || "http://localhost:8080",
-    methods: ["GET", "POST"],
-    credentials: true
+    origin: '*',
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: false
   },
   transports: ['websocket', 'polling']
 });
 
-// Basic security middleware
+// Basic security middleware with CSP configured for LAN compatibility
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -40,18 +41,25 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:"],
       connectSrc: ["'self'", "ws:", "wss:"],
+      // No upgrade-insecure-requests directive to allow HTTP in LAN environments
     },
   },
   crossOriginEmbedderPolicy: false
 }));
 
-// CORS configuration
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || "http://localhost:8080",
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// CORS configuration - completely disabled for LAN compatibility
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.status(200).send();
+  } else {
+    next();
+  }
+});
 
 /*
 // Rate limiting
