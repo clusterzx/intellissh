@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen flex flex-col bg-terminal-bg dark:bg-terminal-bgDark transition-colors duration-200">
+  <div class="fixed inset-0 flex flex-col bg-terminal-bg dark:bg-terminal-bgDark transition-colors duration-200 overflow-hidden">
     <!-- Header -->
     <div class="flex-shrink-0 bg-slate-800/90 dark:bg-slate-900/95 backdrop-blur-sm border-b border-slate-700/50 dark:border-slate-800/80 shadow-sm z-10">
       <div class="flex items-center justify-between px-4 py-3">

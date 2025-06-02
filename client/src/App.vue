@@ -1,7 +1,7 @@
 <template>
-  <div id="app" class="min-h-screen">
-    <!-- Navigation Bar -->
-    <nav v-if="isAuthenticated" class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-200 z-10">
+  <div id="app" :class="['min-h-screen', isTerminalView ? 'overflow-hidden' : '']">
+    <!-- Navigation Bar - Hide on Terminal View -->
+    <nav v-if="isAuthenticated && !isTerminalView" class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-200 z-10">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <!-- Logo and Navigation -->
@@ -80,8 +80,8 @@
       </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="flex-1">
+    <!-- Main Content - Special handling for Terminal View -->
+    <main :class="['flex-1', isTerminalView ? 'overflow-hidden' : '']">
       <router-view />
     </main>
 
@@ -127,15 +127,16 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import { useTerminalStore } from '@/stores/terminalStore'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
 
-// Stores
+// Stores and router
 const authStore = useAuthStore()
 const terminalStore = useTerminalStore()
 const router = useRouter()
+const route = useRoute()
 
 // State
 const showGlobalLoading = ref(false)
@@ -144,6 +145,12 @@ const globalError = ref('')
 
 // Computed
 const isAuthenticated = computed(() => authStore.isAuthenticated)
+const isTerminalView = computed(() => {
+  return route.name === 'terminal' || 
+         route.name === 'terminal-new' || 
+         route.path.includes('/terminal') ||
+         route.path.startsWith('/terminal/')
+})
 
 // Methods
 const handleLogout = async () => {
