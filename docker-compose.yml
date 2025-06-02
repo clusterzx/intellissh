@@ -1,59 +1,12 @@
 version: '3.8'
 
 services:
-  webssh-server:
-    build:
-      context: ./server
-      dockerfile: ../docker/Dockerfile.server
-    container_name: webssh-server
+  intellissh:
+    image: clusterzx/intellissh:latest
+    container_name: intellissh
     ports:
-      - "3000:3000"
+      - 8080:3000
     volumes:
-      - webssh_data:/app/data
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - DB_PATH=/app/data/webssh.db
-      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_change_in_production}
-      - JWT_EXPIRES_IN=24h
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-your_32_byte_hex_encryption_key_change_in_production}
-      - CORS_ORIGIN=http://localhost:8080
-      - RATE_LIMIT_WINDOW_MS=900000
-      - RATE_LIMIT_MAX_REQUESTS=100
+      # Mount for persistent backend data (SQLite DB, session info, etc.)
+      - ./data:/app/server/data
     restart: unless-stopped
-    networks:
-      - webssh-network
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  webssh-client:
-    build:
-      context: ./client
-      dockerfile: ../docker/Dockerfile.client
-    container_name: webssh-client
-    ports:
-      - "8080:80"
-    depends_on:
-      webssh-server:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - webssh-network
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-volumes:
-  webssh_data:
-    driver: local
-
-networks:
-  webssh-network:
-    driver: bridge
