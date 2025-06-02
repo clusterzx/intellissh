@@ -71,13 +71,13 @@ cd client && npm install && npm run dev
 
 #### Run with port mapping (adjust ports as needed)
 ```bash
-docker run -d -p 8080:8080 --name intellissh clusterzx/intellissh:latest
+docker run -d -p 8080:3000 --name intellissh clusterzx/intellissh:latest
 ```
 
 #### Run with volume mounts for persistence
 ```bash
 docker run -d \
-  -p 8080:8080 \
+  -p 8080:3000 \
   -v $(pwd)/data:/app/server/data \
   --name intellissh \
   clusterzx/intellissh:latest
