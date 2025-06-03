@@ -4,7 +4,7 @@ const settingsService = require('./settingsService');
 class LLMService {
   constructor() {
     // Initialize with default values
-    this.provider = 'openai'; // 'openai' or 'ollama'
+    this.provider = 'openai'; // 'openai', 'ollama', or 'custom'
     this.apiKey = '';
     this.baseUrl = 'https://api.openai.com/v1';
     this.model = 'gpt-3.5-turbo';
@@ -23,19 +23,26 @@ class LLMService {
       
       // Load settings from database - use user-specific settings if userId is provided
       this.provider = await settingsService.getSettingValue('llm_provider', userId);
-      this.apiKey = await settingsService.getSettingValue('openai_api_key', userId);
       
-      console.log(`LLM Provider: ${this.provider}, API key present: ${this.apiKey ? 'Yes' : 'No'}`);
-      
-      // Set base URL based on provider
+      // Set base URL, API key and model based on provider
       if (this.provider === 'openai') {
         this.baseUrl = 'https://api.openai.com/v1';
+        this.apiKey = await settingsService.getSettingValue('openai_api_key', userId);
         this.model = await settingsService.getSettingValue('openai_model', userId);
+      } else if (this.provider === 'custom') {
+        this.baseUrl = await settingsService.getSettingValue('custom_api_url', userId);
+        this.apiKey = await settingsService.getSettingValue('custom_api_key', userId);
+        this.model = await settingsService.getSettingValue('custom_model', userId);
       } else {
         // Ollama
         this.baseUrl = await settingsService.getSettingValue('ollama_url', userId);
         this.model = await settingsService.getSettingValue('ollama_model', userId);
+        // Ollama doesn't use an API key
+        this.apiKey = '';
       }
+      
+      console.log(`LLM Provider: ${this.provider}, API key present: ${this.apiKey ? 'Yes' : 'No'}`);
+      console.log(`Base URL: ${this.baseUrl}, Model: ${this.model}`);
       
       this.initialized = true;
       console.log(`LLM Service initialized with provider: ${this.provider}, model: ${this.model}`);
@@ -76,7 +83,7 @@ class LLMService {
     // Generate response based on provider
     try {
       let response;
-      if (this.provider === 'openai') {
+      if (this.provider === 'openai' || this.provider === 'custom') {
         response = await this.callOpenAI(history);
       } else {
         response = await this.callOllama(history);
@@ -153,8 +160,19 @@ ${context.lastCommands.map(cmd => `- ${cmd}`).join('\n')}`;
   }
 
   async callOpenAI(messages) {
-    if (!this.apiKey) {
-      throw new Error('OpenAI API key not configured');
+    // Validate configuration based on provider
+    if (this.provider === 'custom') {
+      if (!this.baseUrl || this.baseUrl.trim() === '') {
+        throw new Error('Custom API URL not configured');
+      }
+      if (!this.apiKey || this.apiKey.trim() === '') {
+        throw new Error('Custom API key not configured');
+      }
+    } else {
+      // Standard OpenAI validation
+      if (!this.apiKey) {
+        throw new Error('OpenAI API key not configured');
+      }
     }
     
     // Clone the messages array to avoid modifying the original
@@ -208,8 +226,21 @@ ${context.lastCommands.map(cmd => `- ${cmd}`).join('\n')}`;
     });
     
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`OpenAI API error: ${error.error?.message || response.statusText}`);
+      let errorMessage;
+      try {
+        const error = await response.json();
+        errorMessage = error.error?.message || response.statusText;
+      } catch (e) {
+        // In case the error response is not valid JSON
+        errorMessage = await response.text() || response.statusText;
+      }
+      
+      // Customize error message based on provider
+      if (this.provider === 'custom') {
+        throw new Error(`Custom API error: ${errorMessage}`);
+      } else {
+        throw new Error(`OpenAI API error: ${errorMessage}`);
+      }
     }
     
     const data = await response.json();
@@ -473,10 +504,11 @@ Please provide your response in JSON format with the following structure:
     return {
       provider: this.provider,
       model: this.model,
-      available_providers: ['openai', 'ollama'],
+      available_providers: ['openai', 'ollama', 'custom'],
       available_models: {
-        openai: ['gpt-3.5-turbo', 'gpt-4'],
-        ollama: ['llama2', 'mistral', 'orca-mini']
+        openai: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini'],
+        ollama: ['llama2', 'mistral', 'orca-mini'],
+        custom: ['gpt-3.5-turbo', 'gpt-4', 'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'gemini-pro']
       }
     };
   }

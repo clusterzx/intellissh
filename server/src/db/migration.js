@@ -1,4 +1,5 @@
 const db = require('./database');
+const { addCustomApiSettings } = require('./customApiMigration');
 
 async function runMigration() {
   try {
@@ -77,6 +78,9 @@ async function runMigration() {
     
     // Add registration control setting if it doesn't exist
     await addRegistrationControlSetting();
+    
+    // Add custom API settings if they don't exist
+    await addCustomApiSettings();
   } catch (error) {
     console.error('Migration failed:', error);
   }
@@ -178,11 +182,14 @@ async function insertDefaultSettings() {
   // Default settings from .env.example values
   const defaultSettings = [
     // LLM Helper settings
-    { id: 'llm_provider', name: 'LLM Provider', value: 'openai', category: 'llm', description: 'LLM provider (openai or ollama)', is_sensitive: 0 },
+    { id: 'llm_provider', name: 'LLM Provider', value: 'openai', category: 'llm', description: 'LLM provider (openai, ollama, or custom)', is_sensitive: 0 },
     { id: 'openai_api_key', name: 'OpenAI API Key', value: '', category: 'llm', description: 'API key for OpenAI', is_sensitive: 1 },
     { id: 'openai_model', name: 'OpenAI Model', value: 'gpt-3.5-turbo', category: 'llm', description: 'Model name for OpenAI', is_sensitive: 0 },
     { id: 'ollama_url', name: 'Ollama URL', value: 'http://localhost:11434', category: 'llm', description: 'URL for Ollama API', is_sensitive: 0 },
     { id: 'ollama_model', name: 'Ollama Model', value: 'llama2', category: 'llm', description: 'Model name for Ollama', is_sensitive: 0 },
+    { id: 'custom_api_url', name: 'Custom API URL', value: '', category: 'llm', description: 'Base URL for custom OpenAI-compatible API', is_sensitive: 0 },
+    { id: 'custom_api_key', name: 'Custom API Key', value: '', category: 'llm', description: 'API key for custom OpenAI-compatible API', is_sensitive: 1 },
+    { id: 'custom_model', name: 'Custom Model', value: 'gpt-3.5-turbo', category: 'llm', description: 'Model name for custom API', is_sensitive: 0 },
     
     // Encryption settings
     { id: 'encryption_key', name: 'Encryption Key', value: '736f4149702aae82ab6e45e64d977e3c6c1e9f7b29b368f61cafab1b9c2cc3b2', category: 'security', description: 'Encryption key for sensitive data', is_sensitive: 1 },
@@ -221,7 +228,7 @@ async function insertDefaultSettings() {
 }
 
 // Export for use in other files
-module.exports = { runMigration, insertDefaultSettings };
+module.exports = { runMigration, insertDefaultSettings, addCustomApiSettings };
 
 // Run migration if this file is executed directly
 if (require.main === module) {

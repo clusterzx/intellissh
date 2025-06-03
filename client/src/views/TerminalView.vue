@@ -27,6 +27,9 @@
                 <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-green-500 dark:bg-green-400 animate-pulse"></span>
                 Live
               </span>
+              <span class="ml-3 text-xs bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 px-1.5 py-0.5 rounded">
+                v{{ appVersion }}
+              </span>
             </div>
             <p v-if="currentSession" class="text-sm text-slate-300 dark:text-slate-400 mt-0.5">
               {{ currentSession.username }}@{{ currentSession.hostname }}:{{ currentSession.port }}
@@ -82,29 +85,43 @@
               Disconnect
             </button>
           </div>
-          
-          <!-- Sidebar Toggle for both Mobile and Desktop -->
+          <!-- SFTP File Browser Toggle -->
           <button 
             v-if="terminalStore.hasActiveSession" 
-            @click="showSidebar = !showSidebar"
+            @click="toggleSftpSidebar"
+            class="rounded-md p-1.5 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+            :aria-expanded="showSftpSidebar"
+            aria-controls="sftp-sidebar"
+            :class="{'bg-slate-700': showSftpSidebar}"
+          >
+            <span class="sr-only">{{ showSftpSidebar ? 'Hide' : 'Show' }} SFTP Browser</span>
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+            </svg>
+          </button>
+          
+          <!-- AI Assistant Toggle -->
+          <button 
+            v-if="terminalStore.hasActiveSession" 
+            @click="toggleLlmSidebar"
             class="rounded-md p-1.5 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
             :aria-expanded="showSidebar"
             aria-controls="llm-sidebar"
+            :class="{'bg-slate-700': showSidebar}"
           >
             <span class="sr-only">{{ showSidebar ? 'Hide' : 'Show' }} AI Assistant</span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" :class="{'rotate-180': showSidebar}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path v-if="!showSidebar" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Main Content Area - Split between Terminal and LLM Helper -->
+    <!-- Main Content Area - Split between Terminal and Sidebars -->
     <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
       <!-- Terminal Container -->
-      <div class="flex-1 relative min-h-0" :class="{'md:pr-96': showSidebar && !isMobile}">
+      <div class="flex-1 relative min-h-0" :class="{'md:pr-96': (showSidebar || showSftpSidebar) && !isMobile}">
         <!-- Loading State -->
         <div
           v-if="loading"
@@ -154,12 +171,39 @@
           </div>
         </div>
 
-        <!-- Terminal -->
-        <div
-          v-show="terminalReady"
-          ref="terminalContainer"
-          class="h-full w-full terminal-container"
-        ></div>
+      <!-- Terminal -->
+      <div
+        v-show="terminalReady"
+        ref="terminalContainer"
+        class="h-full w-full terminal-container"
+        @contextmenu.prevent="handleContextMenu"
+      ></div>
+      
+      <!-- Context Menu for Copy/Paste -->
+      <div
+        v-show="contextMenuVisible"
+        class="absolute bg-slate-800 border border-slate-700 rounded shadow-lg z-50 py-1"
+        :style="`top: ${contextMenuY}px; left: ${contextMenuX}px;`"
+      >
+        <button
+          class="w-full text-left px-4 py-2 text-white hover:bg-slate-700 text-sm flex items-center"
+          @click="copySelectedText"
+        >
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2" />
+          </svg>
+          Copy
+        </button>
+        <button
+          class="w-full text-left px-4 py-2 text-white hover:bg-slate-700 text-sm flex items-center"
+          @click="pasteFromClipboard"
+        >
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          Paste
+        </button>
+      </div>
       </div>
 
       <!-- LLM Helper Sidebar -->
@@ -202,6 +246,47 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
       </button>
+
+      <!-- SFTP File Browser Sidebar -->
+      <div 
+        id="sftp-sidebar"
+        v-if="terminalStore.hasActiveSession" 
+        :class="[
+          'transition-all duration-300 ease-in-out overflow-hidden',
+          'md:absolute md:top-0 md:bottom-0 md:right-0 md:border-l md:border-slate-700/50 dark:md:border-slate-800/80 md:shadow-lg',
+          'z-20',
+          showSftpSidebar ? 'md:w-96 w-full visible' : 'md:w-0 w-0 invisible',
+          isMobile ? 'fixed inset-0' : ''
+        ]"
+      >
+        <div class="h-full overflow-auto bg-white dark:bg-slate-800 md:bg-slate-100 md:dark:bg-slate-800">
+          <SftpFileBrowser />
+        </div>
+        
+        <!-- Mobile Only: Floating Close Button -->
+        <button 
+          v-if="showSftpSidebar && isMobile" 
+          @click="showSftpSidebar = false"
+          class="md:hidden fixed top-3 right-3 z-30 bg-slate-800 text-white rounded-full p-2 shadow-lg"
+          aria-label="Close SFTP Browser"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Floating SFTP browser toggle button (for mobile when closed) -->
+      <button 
+        v-if="terminalStore.hasActiveSession && !showSftpSidebar && isMobile" 
+        @click="showSftpSidebar = true"
+        class="md:hidden fixed bottom-6 left-6 z-20 bg-cyan-600 text-white rounded-full p-3 shadow-lg"
+        aria-label="Open SFTP File Browser"
+      >
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+        </svg>
+      </button>
     </div>
   </div>
 </template>
@@ -209,12 +294,14 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { APP_VERSION } from '@/utils/constants'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import { WebLinksAddon } from 'xterm-addon-web-links'
 import { useTerminalStore } from '@/stores/terminalStore'
 import { useSessionStore } from '@/stores/sessionStore'
 import LLMHelper from '@/components/LLMHelper.vue'
+import SftpFileBrowser from '@/components/SftpFileBrowser.vue'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
 import html2canvas from 'html2canvas'
 
@@ -242,7 +329,24 @@ const error = ref('')
 const terminalReady = ref(false)
 const currentSession = ref(null)
 const showSidebar = ref(false) // Start collapsed on all screen sizes
+const showSftpSidebar = ref(false) // SFTP sidebar toggle state
 const isMobile = ref(window.innerWidth < 768)
+const appVersion = ref(APP_VERSION)
+
+// Sidebar toggle methods
+const toggleLlmSidebar = () => {
+  showSidebar.value = !showSidebar.value
+  if (showSidebar.value && showSftpSidebar.value) {
+    showSftpSidebar.value = false // Close SFTP sidebar when opening LLM sidebar
+  }
+}
+
+const toggleSftpSidebar = () => {
+  showSftpSidebar.value = !showSftpSidebar.value
+  if (showSftpSidebar.value && showSidebar.value) {
+    showSidebar.value = false // Close LLM sidebar when opening SFTP sidebar
+  }
+}
 
 // Computed session ID
 const sessionId = computed(() => props.sessionId || route.params.sessionId)
@@ -260,6 +364,12 @@ const hardRedirect = () => {
   // Perform a hard redirect to root URL
   window.location.href = '/'
 }
+
+// Context menu for copy/paste
+const contextMenuVisible = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+const selectedText = ref('')
 
 const initializeTerminal = () => {
   if (terminal.value) {
@@ -304,8 +414,17 @@ const initializeTerminal = () => {
 
   terminal.value.loadAddon(fitAddon.value)
   terminal.value.loadAddon(webLinksAddon)
-
+  
+  // Initialize the terminal UI
   terminal.value.open(terminalContainer.value)
+  
+  // Try to load the WebGL addon for better performance
+  try {
+    const webglAddon = new WebglAddon()
+    terminal.value.loadAddon(webglAddon)
+  } catch (error) {
+    console.warn('WebGL addon could not be loaded:', error)
+  }
   
   // Use nextTick to ensure the DOM has updated before fitting
   nextTick(() => {
@@ -450,8 +569,8 @@ watch(() => isDarkMode.value, () => {
   }
 }, { immediate: true })
 
-// Watch for sidebar toggle to resize terminal
-watch(() => showSidebar.value, () => {
+// Watch for sidebar toggles to resize terminal
+watch([() => showSidebar.value, () => showSftpSidebar.value], () => {
   if (fitAddon.value && terminalReady.value) {
     // Use nextTick to ensure the DOM has updated before fitting
     nextTick(() => {
@@ -497,6 +616,55 @@ watch(() => route.params.sessionId, async (newSessionId, oldSessionId) => {
 }, { immediate: false })
 
 // Lifecycle
+// Context menu handling
+const handleContextMenu = (event) => {
+  if (!terminal.value) return
+  
+  // Position the context menu
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  
+  // Get selected text from terminal if any
+  selectedText.value = terminal.value.getSelection()
+  
+  // Show the context menu
+  contextMenuVisible.value = true
+  
+  // Add event listener to close the context menu when clicking elsewhere
+  document.addEventListener('click', closeContextMenu)
+}
+
+const closeContextMenu = () => {
+  contextMenuVisible.value = false
+  document.removeEventListener('click', closeContextMenu)
+}
+
+const copySelectedText = () => {
+  if (selectedText.value) {
+    navigator.clipboard.writeText(selectedText.value)
+      .then(() => {
+        console.log('Text copied to clipboard')
+      })
+      .catch(err => {
+        console.error('Failed to copy text: ', err)
+      })
+  }
+  closeContextMenu()
+}
+
+const pasteFromClipboard = () => {
+  navigator.clipboard.readText()
+    .then(text => {
+      if (text && terminal.value) {
+        terminalStore.sendInput(text)
+      }
+    })
+    .catch(err => {
+      console.error('Failed to paste text: ', err)
+    })
+  closeContextMenu()
+}
+
 onMounted(async () => {
   // Load session data
   await loadSession()
@@ -508,11 +676,39 @@ onMounted(async () => {
 
   // Set up resize handler
   window.addEventListener('resize', handleResize)
+  
+  // Add keyboard shortcuts for copy/paste
+  document.addEventListener('keydown', (e) => {
+    // Only process if terminal is focused
+    if (!terminal.value || !document.activeElement.closest('.terminal-container')) return
+    
+    // Ctrl+C or Command+C to copy
+    if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !e.shiftKey) {
+      const selection = terminal.value.getSelection()
+      if (selection) {
+        navigator.clipboard.writeText(selection)
+        e.preventDefault()
+      }
+    }
+    
+    // Ctrl+V or Command+V to paste
+    if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+      navigator.clipboard.readText()
+        .then(text => {
+          if (text && terminal.value) {
+            terminalStore.sendInput(text)
+          }
+        })
+      e.preventDefault()
+    }
+  })
 })
 
 onUnmounted(() => {
   // Clean up
   window.removeEventListener('resize', handleResize)
+  document.removeEventListener('click', closeContextMenu)
+  document.removeEventListener('keydown', null)
   
   if (terminal.value) {
     terminal.value.dispose()
