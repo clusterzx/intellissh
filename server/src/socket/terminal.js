@@ -1,4 +1,5 @@
 const sshService = require('../services/sshService');
+const sftpService = require('../services/sftpService');
 const sessionService = require('../services/sessionService');
 const authService = require('../services/authService');
 
@@ -106,6 +107,54 @@ const handleSocketConnection = (io) => {
       // This event is captured in the sshService.setupStreamHandlers method
     });
 
+    // Connect to SFTP
+    socket.on('connect-sftp', async (data) => {
+      try {
+        if (!socket.authenticated) {
+          socket.emit('sftp-connection-error', { message: 'Not authenticated' });
+          return;
+        }
+
+        const { sessionId } = data;
+        
+        if (!sessionId) {
+          socket.emit('sftp-connection-error', { message: 'Session ID required' });
+          return;
+        }
+
+        console.log(`User ${socket.username} connecting to SFTP session ${sessionId}`);
+
+        // Get session with credentials
+        const sessionData = await sessionService.getSessionWithCredentials(
+          parseInt(sessionId), 
+          socket.userId
+        );
+
+        // Connect to SFTP
+        const result = await sftpService.connect(sessionData, socket);
+        
+        socket.sftpConnectionId = result.connectionId;
+
+        socket.emit('sftp-connected', {
+          success: true,
+          connectionId: result.connectionId,
+          session: {
+            id: sessionData.id,
+            name: sessionData.name,
+            hostname: sessionData.hostname,
+            username: sessionData.username
+          }
+        });
+
+        console.log(`SFTP connection established: ${result.connectionId}`);
+      } catch (error) {
+        console.error('SFTP connection error:', error.message);
+        socket.emit('sftp-connection-error', { 
+          message: error.message || 'Failed to connect to SFTP session'
+        });
+      }
+    });
+
     // Handle disconnect SSH session
     socket.on('disconnect-session', () => {
       if (socket.connectionId) {
@@ -113,6 +162,22 @@ const handleSocketConnection = (io) => {
         sshService.disconnect(socket.connectionId);
         socket.connectionId = null;
         socket.sessionId = null;
+      }
+      
+      // Also disconnect SFTP if connected
+      if (socket.sftpConnectionId) {
+        console.log(`Disconnecting SFTP session: ${socket.sftpConnectionId}`);
+        sftpService.disconnect(socket.sftpConnectionId);
+        socket.sftpConnectionId = null;
+      }
+    });
+
+    // Handle disconnect SFTP session only
+    socket.on('disconnect-sftp', () => {
+      if (socket.sftpConnectionId) {
+        console.log(`Disconnecting SFTP session: ${socket.sftpConnectionId}`);
+        sftpService.disconnect(socket.sftpConnectionId);
+        socket.sftpConnectionId = null;
       }
     });
 
@@ -123,6 +188,11 @@ const handleSocketConnection = (io) => {
       if (socket.connectionId) {
         console.log(`Cleaning up SSH connection: ${socket.connectionId}`);
         sshService.disconnect(socket.connectionId);
+      }
+      
+      if (socket.sftpConnectionId) {
+        console.log(`Cleaning up SFTP connection: ${socket.sftpConnectionId}`);
+        sftpService.disconnect(socket.sftpConnectionId);
       }
     });
 
@@ -162,9 +232,14 @@ const handleSocketConnection = (io) => {
 
   // Periodic cleanup of stale connections
   setInterval(() => {
-    const cleanedUp = sshService.cleanupStaleConnections();
-    if (cleanedUp > 0) {
-      console.log(`Cleaned up ${cleanedUp} stale SSH connections`);
+    const cleanedUpSSH = sshService.cleanupStaleConnections();
+    if (cleanedUpSSH > 0) {
+      console.log(`Cleaned up ${cleanedUpSSH} stale SSH connections`);
+    }
+    
+    const cleanedUpSFTP = sftpService.cleanupStaleConnections();
+    if (cleanedUpSFTP > 0) {
+      console.log(`Cleaned up ${cleanedUpSFTP} stale SFTP connections`);
     }
   }, 5 * 60 * 1000); // Every 5 minutes
 };

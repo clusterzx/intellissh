@@ -82,29 +82,43 @@
               Disconnect
             </button>
           </div>
-          
-          <!-- Sidebar Toggle for both Mobile and Desktop -->
+          <!-- SFTP File Browser Toggle -->
           <button 
             v-if="terminalStore.hasActiveSession" 
-            @click="showSidebar = !showSidebar"
+            @click="toggleSftpSidebar"
+            class="rounded-md p-1.5 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+            :aria-expanded="showSftpSidebar"
+            aria-controls="sftp-sidebar"
+            :class="{'bg-slate-700': showSftpSidebar}"
+          >
+            <span class="sr-only">{{ showSftpSidebar ? 'Hide' : 'Show' }} SFTP Browser</span>
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+            </svg>
+          </button>
+          
+          <!-- AI Assistant Toggle -->
+          <button 
+            v-if="terminalStore.hasActiveSession" 
+            @click="toggleLlmSidebar"
             class="rounded-md p-1.5 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
             :aria-expanded="showSidebar"
             aria-controls="llm-sidebar"
+            :class="{'bg-slate-700': showSidebar}"
           >
             <span class="sr-only">{{ showSidebar ? 'Hide' : 'Show' }} AI Assistant</span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" :class="{'rotate-180': showSidebar}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path v-if="!showSidebar" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Main Content Area - Split between Terminal and LLM Helper -->
+    <!-- Main Content Area - Split between Terminal and Sidebars -->
     <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
       <!-- Terminal Container -->
-      <div class="flex-1 relative min-h-0" :class="{'md:pr-96': showSidebar && !isMobile}">
+      <div class="flex-1 relative min-h-0" :class="{'md:pr-96': (showSidebar || showSftpSidebar) && !isMobile}">
         <!-- Loading State -->
         <div
           v-if="loading"
@@ -202,6 +216,47 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
       </button>
+
+      <!-- SFTP File Browser Sidebar -->
+      <div 
+        id="sftp-sidebar"
+        v-if="terminalStore.hasActiveSession" 
+        :class="[
+          'transition-all duration-300 ease-in-out overflow-hidden',
+          'md:absolute md:top-0 md:bottom-0 md:right-0 md:border-l md:border-slate-700/50 dark:md:border-slate-800/80 md:shadow-lg',
+          'z-20',
+          showSftpSidebar ? 'md:w-96 w-full visible' : 'md:w-0 w-0 invisible',
+          isMobile ? 'fixed inset-0' : ''
+        ]"
+      >
+        <div class="h-full overflow-auto bg-white dark:bg-slate-800 md:bg-slate-100 md:dark:bg-slate-800">
+          <SftpFileBrowser />
+        </div>
+        
+        <!-- Mobile Only: Floating Close Button -->
+        <button 
+          v-if="showSftpSidebar && isMobile" 
+          @click="showSftpSidebar = false"
+          class="md:hidden fixed top-3 right-3 z-30 bg-slate-800 text-white rounded-full p-2 shadow-lg"
+          aria-label="Close SFTP Browser"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Floating SFTP browser toggle button (for mobile when closed) -->
+      <button 
+        v-if="terminalStore.hasActiveSession && !showSftpSidebar && isMobile" 
+        @click="showSftpSidebar = true"
+        class="md:hidden fixed bottom-6 left-6 z-20 bg-cyan-600 text-white rounded-full p-3 shadow-lg"
+        aria-label="Open SFTP File Browser"
+      >
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+        </svg>
+      </button>
     </div>
   </div>
 </template>
@@ -215,6 +270,7 @@ import { WebLinksAddon } from 'xterm-addon-web-links'
 import { useTerminalStore } from '@/stores/terminalStore'
 import { useSessionStore } from '@/stores/sessionStore'
 import LLMHelper from '@/components/LLMHelper.vue'
+import SftpFileBrowser from '@/components/SftpFileBrowser.vue'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
 import html2canvas from 'html2canvas'
 
@@ -242,7 +298,23 @@ const error = ref('')
 const terminalReady = ref(false)
 const currentSession = ref(null)
 const showSidebar = ref(false) // Start collapsed on all screen sizes
+const showSftpSidebar = ref(false) // SFTP sidebar toggle state
 const isMobile = ref(window.innerWidth < 768)
+
+// Sidebar toggle methods
+const toggleLlmSidebar = () => {
+  showSidebar.value = !showSidebar.value
+  if (showSidebar.value && showSftpSidebar.value) {
+    showSftpSidebar.value = false // Close SFTP sidebar when opening LLM sidebar
+  }
+}
+
+const toggleSftpSidebar = () => {
+  showSftpSidebar.value = !showSftpSidebar.value
+  if (showSftpSidebar.value && showSidebar.value) {
+    showSidebar.value = false // Close LLM sidebar when opening SFTP sidebar
+  }
+}
 
 // Computed session ID
 const sessionId = computed(() => props.sessionId || route.params.sessionId)
@@ -450,8 +522,8 @@ watch(() => isDarkMode.value, () => {
   }
 }, { immediate: true })
 
-// Watch for sidebar toggle to resize terminal
-watch(() => showSidebar.value, () => {
+// Watch for sidebar toggles to resize terminal
+watch([() => showSidebar.value, () => showSftpSidebar.value], () => {
   if (fitAddon.value && terminalReady.value) {
     // Use nextTick to ensure the DOM has updated before fitting
     nextTick(() => {
