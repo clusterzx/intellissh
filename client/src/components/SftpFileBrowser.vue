@@ -525,18 +525,42 @@ const navigateToDirectory = async (path) => {
 const navigateToParentDirectory = () => {
   const currentPath = terminalStore.currentDirectory
   
-  if (currentPath === '/' || currentPath === '.') {
+  console.log('SFTP: Current directory before navigation:', currentPath)
+  
+  // Already at root, nothing to do
+  if (currentPath === '/') {
+    console.log('SFTP: Already at root directory, not navigating')
     return
+  }
+  
+  // If path is just ".", navigate to root
+  if (currentPath === '.') {
+    console.log('SFTP: Navigating from "." to root directory')
+    return navigateToDirectory('/')
   }
   
   // Get parent directory path
   let parentPath
-  if (currentPath.lastIndexOf('/') === 0) {
+  
+  // Handle paths with trailing slash
+  const normalizedPath = currentPath.endsWith('/') && currentPath.length > 1 
+    ? currentPath.slice(0, -1) 
+    : currentPath
+  
+  // Check if we're in a top-level directory under root
+  if (normalizedPath.lastIndexOf('/') === 0) {
     parentPath = '/'
   } else {
-    parentPath = currentPath.substring(0, currentPath.lastIndexOf('/'))
+    // Get everything up to the last slash
+    parentPath = normalizedPath.substring(0, normalizedPath.lastIndexOf('/'))
+    
+    // If empty string, we need to go to root
+    if (!parentPath) {
+      parentPath = '/'
+    }
   }
   
+  console.log('SFTP: Navigating to parent directory:', parentPath)
   navigateToDirectory(parentPath)
 }
 
