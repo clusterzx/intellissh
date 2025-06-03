@@ -1,6 +1,6 @@
 # 📡 IntelliSSH
 
-A secure and user-friendly web app for managing Linux servers with Artifical Intelligence via SSH—right from your browser.
+A secure and user-friendly web app for managing Linux servers with Artifical Intelligence via SSH—right from your browser + SFTP Browser in Terminal.
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![License](https://img.shields.io/badge/license-ISC-green)
@@ -24,6 +24,7 @@ Please log in and change this password immediately!
 IntelliSSH helps system administrators and developers access and control remote Linux servers with:
 
 - Browser-based SSH access (via xterm.js)
+- Full SFTP Client in Terminal (Download, Upload (Files/Folder), Create Folder, Delete)
 - Centralized and secure session management
 - Support for password and key-based auth
 - Real-time terminal via WebSocket
@@ -115,11 +116,11 @@ services:
 
 ## 📌 Roadmap Highlights
 
-- SFTP file browser  
-- Activity logging  
-- Multi-user session sharing  
-- Bulk operations & SSH key manager  
-- i18n and mobile apps  
+- SFTP file browser ✅
+- Activity logging  ⏳
+- Multi-user session sharing  ⏳
+- Bulk operations & SSH key manager  ⏳
+- i18n and mobile apps  ⏳
 
 ## 🤝 Contributing
 
