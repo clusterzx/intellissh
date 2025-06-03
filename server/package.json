@@ -25,12 +25,14 @@
     "express-rate-limit": "^6.8.1",
     "helmet": "^7.0.0",
     "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
     "node-fetch": "^2.6.7",
     "node-pty": "^1.0.0",
     "nodemailer": "^7.0.3",
     "socket.io": "^4.7.2",
     "sqlite3": "^5.1.6",
-    "ssh2": "^1.14.0"
+    "ssh2": "^1.14.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "jest": "^29.6.2",

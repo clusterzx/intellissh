@@ -119,15 +119,36 @@
       
       <!-- File Operations Toolbar -->
       <div class="p-2 bg-slate-800 border-b border-slate-700 flex flex-wrap gap-2">
-        <button 
-          @click="showUploadFileDialog = true"
-          class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded transition-colors flex items-center"
+        <label 
+          class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded transition-colors flex items-center cursor-pointer"
         >
           <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
           </svg>
-          Upload
-        </button>
+          Upload File
+          <input 
+            type="file" 
+            class="hidden" 
+            @change="handleFileUpload"
+          />
+        </label>
+        
+        <label 
+          class="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded transition-colors flex items-center cursor-pointer"
+        >
+          <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          Upload Folder
+          <input 
+            type="file" 
+            class="hidden" 
+            @change="handleFolderUpload" 
+            webkitdirectory 
+            directory 
+            multiple
+          />
+        </label>
         
         <button
           @click="showCreateDirectoryDialog = true"
@@ -413,6 +434,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useTerminalStore } from '@/stores/terminalStore'
+import { useAuthStore } from '@/stores/authStore'
 
 const terminalStore = useTerminalStore()
 
@@ -566,18 +588,60 @@ const uploadFile = async () => {
   }
 }
 
-const downloadSelectedItem = () => {
+const downloadSelectedItem = async () => {
   if (!selectedItem.value || !selectedItem.value.attrs.isFile) {
     return
   }
   
-  // Suggest a local path with the same filename
-  downloadLocalPath.value = `/tmp/${selectedItem.value.filename}`
-  
-  // Show download dialog
-  showDownloadDialog.value = true
+  try {
+    loading.value = true
+    
+    // Get the remote path
+    const remotePath = getFullPath(selectedItem.value.filename)
+    
+    // Get auth token
+    const authStore = useAuthStore()
+    
+    // Use the API to download the file
+    const downloadResponse = await fetch('/api/files/sftp-download', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`
+      },
+      body: JSON.stringify({
+        remotePath: remotePath,
+        connectionId: terminalStore.sftpConnectionId
+      })
+    })
+    
+    if (!downloadResponse.ok) {
+      const errorData = await downloadResponse.json()
+      throw new Error(errorData.error || 'Failed to download file from SFTP server')
+    }
+    
+    const downloadResult = await downloadResponse.json()
+    
+    // Create a download link and click it
+    const downloadLink = document.createElement('a')
+    downloadLink.href = downloadResult.downloadUrl + `?name=${encodeURIComponent(selectedItem.value.filename)}`
+    downloadLink.download = selectedItem.value.filename
+    document.body.appendChild(downloadLink)
+    downloadLink.click()
+    document.body.removeChild(downloadLink)
+    
+    // Show success message
+    alert(`File ${selectedItem.value.filename} downloaded successfully!`)
+    
+  } catch (error) {
+    console.error('Failed to download file:', error)
+    alert(`Download failed: ${error.message}`)
+  } finally {
+    loading.value = false
+  }
 }
 
+// Keep this method for legacy/manual path downloads
 const downloadFile = async () => {
   try {
     loading.value = true
@@ -665,6 +729,131 @@ const formatDate = (timestamp) => {
 }
 
 // Get item type for display
+// Handle file upload from browser file dialog
+const handleFileUpload = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+  
+  try {
+    loading.value = true
+    
+    // Create a FormData object to send the file
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    // Get the remote path where the file should be uploaded
+    const remotePath = getFullPath(file.name)
+    
+    // 1. Upload the file to the server
+    const authStore = useAuthStore()
+    const uploadResponse = await fetch('/api/files/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`
+      },
+      body: formData
+    })
+    
+    if (!uploadResponse.ok) {
+      const errorData = await uploadResponse.json()
+      throw new Error(errorData.error || 'Failed to upload file to server')
+    }
+    
+    const uploadResult = await uploadResponse.json()
+    
+    // 2. Initiate the SFTP upload from server to remote
+    const sftpUploadResponse = await fetch('/api/files/sftp-upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authStore.token}`
+      },
+      body: JSON.stringify({
+        localPath: uploadResult.localPath,
+        remotePath: remotePath,
+        connectionId: terminalStore.sftpConnectionId
+      })
+    })
+    
+    if (!sftpUploadResponse.ok) {
+      const errorData = await sftpUploadResponse.json()
+      throw new Error(errorData.error || 'Failed to upload file to SFTP server')
+    }
+    
+    // Success, refresh the directory
+    await listCurrentDirectory()
+    
+    // Show success message
+    alert(`File ${file.name} uploaded successfully to ${remotePath}`)
+    
+  } catch (error) {
+    console.error('Failed to process file upload:', error)
+    alert(`Upload failed: ${error.message}`)
+  } finally {
+    loading.value = false
+    // Reset the file input
+    event.target.value = ''
+  }
+}
+
+// Handle folder upload from browser file dialog
+const handleFolderUpload = async (event) => {
+  const files = event.target.files
+  if (!files || files.length === 0) return
+  
+  try {
+    loading.value = true
+    
+    // Group files by their relative path/folder structure
+    const filesByFolder = {}
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      const relativePath = file.webkitRelativePath
+      const folderPath = relativePath.split('/')[0] // Get the top-level folder name
+      
+      if (!filesByFolder[folderPath]) {
+        filesByFolder[folderPath] = []
+      }
+      
+      filesByFolder[folderPath].push(file)
+    }
+    
+    // For each folder, we would upload its files to the correct remote paths
+    const folderNames = Object.keys(filesByFolder)
+    
+    if (folderNames.length > 0) {
+      const mainFolder = folderNames[0]
+      const remoteFolderPath = getFullPath(mainFolder)
+      
+      // Create the main remote folder
+      await terminalStore.createDirectory(remoteFolderPath)
+      
+      // In a real implementation, you would:
+      // 1. Upload each file to the server
+      // 2. Process the folder structure on the server
+      // 3. Use SFTP to recreate the structure on the remote server
+      
+      console.log(`Would upload folder ${mainFolder} with ${filesByFolder[mainFolder].length} files to ${remoteFolderPath}`)
+      
+      // Notify user
+      alert(`Folder upload functionality requires server-side implementation. 
+The folder structure was detected (${mainFolder} with ${filesByFolder[mainFolder].length} files) 
+and the main folder was created at ${remoteFolderPath}.`)
+      
+      // Refresh to show at least the created directory
+      await listCurrentDirectory()
+    }
+    
+  } catch (error) {
+    console.error('Failed to process folder upload:', error)
+  } finally {
+    loading.value = false
+    // Reset the file input
+    event.target.value = ''
+  }
+}
+
 const getItemType = (item) => {
   if (item.attrs.isDirectory) return 'Directory'
   if (item.attrs.isSymlink) return 'Symlink'

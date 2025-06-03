@@ -10,10 +10,13 @@ const path = require('path');
 // Import services and middleware
 const db = require('./db/database');
 const { runMigration } = require('./db/migration');
+
+// Load routes
 const authRoutes = require('./api/auth');
 const sessionRoutes = require('./api/sessions');
 const debugRoutes = require('./api/debug');
 const settingsRoutes = require('./api/settings');
+const filesRoutes = require('./api/files');
 const handleSocketConnection = require('./socket/terminal');
 const { handleAuthError } = require('./middleware/authMiddleware');
 
@@ -118,6 +121,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/ssh', debugRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/files', filesRoutes);
 
 // Handle 404 for API routes
 app.use('/api/*', (req, res) => {
@@ -210,6 +214,7 @@ const startServer = async () => {
 ║  • /api/auth    - Authentication         ║
 ║  • /api/sessions - Session Management    ║
 ║  • /api/ssh     - SSH Debug Tools        ║
+║  • /api/files   - File Management        ║
 ║  • /health      - Health Check           ║
 ║                                          ║
 ╚══════════════════════════════════════════╝
