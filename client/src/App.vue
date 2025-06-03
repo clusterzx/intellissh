@@ -12,7 +12,10 @@
                   <path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
                 </svg>
               </div>
-              <h1 class="text-xl font-bold text-slate-900 dark:text-white">IntelliSSH</h1>
+              <div class="flex items-center">
+                <h1 class="text-xl font-bold text-slate-900 dark:text-white">IntelliSSH</h1>
+                <span class="ml-2 text-xs bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 px-1.5 py-0.5 rounded">v{{ appVersion }}</span>
+              </div>
             </router-link>
             
             <div class="hidden sm:ml-8 sm:flex sm:space-x-8">
@@ -127,6 +130,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { APP_VERSION } from '@/utils/constants'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import { useTerminalStore } from '@/stores/terminalStore'
@@ -142,6 +146,7 @@ const route = useRoute()
 const showGlobalLoading = ref(false)
 const loadingMessage = ref('')
 const globalError = ref('')
+const appVersion = ref(APP_VERSION)
 
 // Computed
 const isAuthenticated = computed(() => authStore.isAuthenticated)

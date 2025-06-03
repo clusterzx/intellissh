@@ -27,6 +27,9 @@
                 <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-green-500 dark:bg-green-400 animate-pulse"></span>
                 Live
               </span>
+              <span class="ml-3 text-xs bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 px-1.5 py-0.5 rounded">
+                v{{ appVersion }}
+              </span>
             </div>
             <p v-if="currentSession" class="text-sm text-slate-300 dark:text-slate-400 mt-0.5">
               {{ currentSession.username }}@{{ currentSession.hostname }}:{{ currentSession.port }}
@@ -291,6 +294,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { APP_VERSION } from '@/utils/constants'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import { WebLinksAddon } from 'xterm-addon-web-links'
@@ -327,6 +331,7 @@ const currentSession = ref(null)
 const showSidebar = ref(false) // Start collapsed on all screen sizes
 const showSftpSidebar = ref(false) // SFTP sidebar toggle state
 const isMobile = ref(window.innerWidth < 768)
+const appVersion = ref(APP_VERSION)
 
 // Sidebar toggle methods
 const toggleLlmSidebar = () => {
