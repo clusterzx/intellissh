@@ -17,7 +17,7 @@ if (!fs.existsSync(tempDir)) {
 const storage = multer.diskStorage({
   destination: function(req, file, cb) {
     // Create a user-specific directory
-    const userDir = path.join(tempDir, req.userId.toString());
+    const userDir = path.join(tempDir, req.user.id.toString());
     if (!fs.existsSync(userDir)) {
       fs.mkdirSync(userDir, { recursive: true });
     }
@@ -154,7 +154,7 @@ const handleSftpDownload = async (req, res) => {
     }
 
     // Create a unique filename in the user's temp directory
-    const userDir = path.join(tempDir, req.userId.toString());
+    const userDir = path.join(tempDir, req.user.id.toString());
     if (!fs.existsSync(userDir)) {
       fs.mkdirSync(userDir, { recursive: true });
     }
@@ -170,7 +170,7 @@ const handleSftpDownload = async (req, res) => {
     // Return success with the local path for browser download
     res.json({
       ...result,
-      downloadUrl: `/api/files/download/${req.userId}/${uniqueFilename}`,
+      downloadUrl: `/api/files/download/${req.user.id}/${uniqueFilename}`,
       originalFilename: filename
     });
 
