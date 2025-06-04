@@ -11,41 +11,6 @@ The LLM Terminal Assistant is a feature that provides AI-powered assistance for 
 - **Support for Multiple LLM Providers**: Use either OpenAI API or Ollama
 - **Configurable**: Easily toggle the assistant on/off or change settings
 
-## Setup
-
-### Prerequisites
-
-To use the LLM Terminal Assistant, you'll need either:
-
-1. An OpenAI API key (for using GPT models)
-2. Ollama running locally (for using open-source models)
-
-### Configuration
-
-1. Copy the `.env.example` file to `.env` in the server directory:
-
-```bash
-cp webssh-control/server/.env.example webssh-control/server/.env
-```
-
-2. Configure the LLM settings in your `.env` file:
-
-```
-# LLM Helper Configuration
-LLM_PROVIDER=openai  # openai or ollama
-OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_MODEL=gpt-3.5-turbo
-OLLAMA_URL=http://localhost:11434
-OLLAMA_MODEL=llama2
-```
-
-3. If using Ollama, make sure it's installed and running:
-
-```bash
-# For Ollama (https://ollama.ai)
-ollama run llama2  # or any other model you prefer
-```
-
 ## Usage
 
 ### Enabling the Assistant
@@ -88,7 +53,6 @@ If you encounter issues:
 ### OpenAI
 
 - Requires an API key
-- Supported models: gpt-3.5-turbo, gpt-4
 - More accurate but requires internet connection and has usage costs
 
 ### Ollama
