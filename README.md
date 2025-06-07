@@ -3,7 +3,7 @@
 A secure and user-friendly web app for managing Linux servers with Artifical Intelligence via SSH—right from your browser + SFTP Browser in Terminal.
 
 ![Version](https://img.shields.io/badge/version-1.1.0-blue)
-![License](https://img.shields.io/badge/license-ISC-green)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
 Support this project:<br>
 [![Patreon](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/c/clusterzx)
