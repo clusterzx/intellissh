@@ -641,27 +641,70 @@ const closeContextMenu = () => {
 
 const copySelectedText = () => {
   if (selectedText.value) {
-    navigator.clipboard.writeText(selectedText.value)
-      .then(() => {
-        console.log('Text copied to clipboard')
-      })
-      .catch(err => {
-        console.error('Failed to copy text: ', err)
-      })
+    // Check if clipboard API is available
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(selectedText.value)
+        .then(() => {
+          console.log('Text copied to clipboard')
+        })
+        .catch(err => {
+          console.error('Failed to copy text: ', err)
+          fallbackCopy(selectedText.value)
+        })
+    } else {
+      // Fallback for browsers without clipboard API
+      fallbackCopy(selectedText.value)
+    }
   }
   closeContextMenu()
 }
 
+// Fallback copy method using textarea
+const fallbackCopy = (text) => {
+  try {
+    const textArea = document.createElement('textarea')
+    textArea.value = text
+    // Make the textarea out of viewport
+    textArea.style.position = 'fixed'
+    textArea.style.left = '-999999px'
+    textArea.style.top = '-999999px'
+    document.body.appendChild(textArea)
+    textArea.focus()
+    textArea.select()
+    
+    const successful = document.execCommand('copy')
+    document.body.removeChild(textArea)
+    
+    if (successful) {
+      console.log('Fallback: Text copied to clipboard')
+    } else {
+      console.error('Fallback: Unable to copy')
+    }
+  } catch (err) {
+    console.error('Fallback copy failed:', err)
+  }
+}
+
 const pasteFromClipboard = () => {
-  navigator.clipboard.readText()
-    .then(text => {
-      if (text && terminal.value) {
-        terminalStore.sendInput(text)
-      }
-    })
-    .catch(err => {
-      console.error('Failed to paste text: ', err)
-    })
+  // Check if clipboard API is available
+  if (navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
+    navigator.clipboard.readText()
+      .then(text => {
+        if (text && terminal.value) {
+          terminalStore.sendInput(text)
+        }
+      })
+      .catch(err => {
+        console.error('Failed to paste text: ', err)
+        // Alert user to paste manually if clipboard access is denied
+        terminal.value?.focus()
+        alert('Please use Ctrl+V or Command+V to paste')
+      })
+  } else {
+    // Fallback for browsers without clipboard API
+    terminal.value?.focus()
+    alert('Please use Ctrl+V or Command+V to paste')
+  }
   closeContextMenu()
 }
 
@@ -678,37 +721,59 @@ onMounted(async () => {
   window.addEventListener('resize', handleResize)
   
   // Add keyboard shortcuts for copy/paste
-  document.addEventListener('keydown', (e) => {
-    // Only process if terminal is focused
-    if (!terminal.value || !document.activeElement.closest('.terminal-container')) return
-    
-    // Ctrl+C or Command+C to copy
-    if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !e.shiftKey) {
-      const selection = terminal.value.getSelection()
-      if (selection) {
+  document.addEventListener('keydown', keyboardEventHandler)
+})
+
+// Keyboard event handler reference to properly remove on unmount
+const keyboardEventHandler = (e) => {
+  // Only process if terminal is focused
+  if (!terminal.value || !document.activeElement.closest('.terminal-container')) return
+  
+  // Ctrl+C or Command+C to copy
+  if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !e.shiftKey) {
+    const selection = terminal.value.getSelection()
+    if (selection) {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
         navigator.clipboard.writeText(selection)
-        e.preventDefault()
+          .catch(err => {
+            console.error('Failed to copy text: ', err)
+            fallbackCopy(selection)
+          })
+      } else {
+        fallbackCopy(selection)
       }
+      e.preventDefault()
     }
-    
-    // Ctrl+V or Command+V to paste
-    if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+  }
+  
+  // Ctrl+V or Command+V to paste
+  if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+    e.preventDefault()
+    if (navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
       navigator.clipboard.readText()
         .then(text => {
           if (text && terminal.value) {
             terminalStore.sendInput(text)
           }
         })
-      e.preventDefault()
+        .catch(err => {
+          console.error('Failed to paste text: ', err)
+          // Terminal should remain focused for manual paste attempt
+          terminal.value?.focus()
+        })
+    } else {
+      // For browsers without clipboard API, just focus the terminal
+      // and let the browser's default paste mechanism work
+      terminal.value?.focus()
     }
-  })
-})
+  }
+}
 
 onUnmounted(() => {
   // Clean up
   window.removeEventListener('resize', handleResize)
   document.removeEventListener('click', closeContextMenu)
-  document.removeEventListener('keydown', null)
+  document.removeEventListener('keydown', keyboardEventHandler)
   
   if (terminal.value) {
     terminal.value.dispose()
