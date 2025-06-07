@@ -54,7 +54,7 @@ Frontend (Vue) <--> Backend (Express)
 
 ```bash
 git clone https://github.com/clusterzx/intellissh
-cd webssh-control
+cd intellissh
 
 # Backend
 cd server && npm install && cp .env.example .env && npm run dev
