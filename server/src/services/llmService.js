@@ -159,6 +159,69 @@ ${context.lastCommands.map(cmd => `- ${cmd}`).join('\n')}`;
     return prompt;
   }
 
+  // Helper method to sanitize JSON strings before parsing
+  sanitizeJsonString(jsonStr) {
+    if (!jsonStr || typeof jsonStr !== 'string') {
+      console.log("Invalid JSON string received:", jsonStr);
+      return '{"chat_msg": "Invalid response from API"}';
+    }
+    
+    try {
+      // Try to extract just a JSON object if embedded in other text
+      const jsonMatch = jsonStr.match(/{.*}/s);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[0];
+      }
+      
+      // Simple approach: just take the raw string and try to convert it to valid JSON
+      // For complex JSON with nested quotes and escaping issues, the safest approach
+      // is to create a new JSON object from the extracted content
+      
+      try {
+        // First, try parsing it directly - it might already be valid
+        JSON.parse(jsonStr);
+        return jsonStr;
+      } catch (parseError) {
+        console.log("Initial parse failed, attempting to fix JSON:", parseError.message);
+        
+        // If parsing fails, try to extract the essential data using regex
+        const chatMsgMatch = jsonStr.match(/"chat_msg"\s*:\s*"([^"]*(?:"[^"]*"[^"]*)*)"/);
+        const messageMsgMatch = jsonStr.match(/"message"\s*:\s*"([^"]*(?:"[^"]*"[^"]*)*)"/);
+        const commandSuggestionMatch = jsonStr.match(/"command_suggestion"\s*:\s*"([^"]*(?:"[^"]*"[^"]*)*)"/);
+        const commandMatch = jsonStr.match(/"command"\s*:\s*"([^"]*(?:"[^"]*"[^"]*)*)"/);
+        
+        // Extract content or use defaults
+        const chatMsg = 
+          (chatMsgMatch && chatMsgMatch[1]) ? 
+          chatMsgMatch[1].replace(/\\"/g, '"').replace(/"/g, '\\"') : 
+          (messageMsgMatch && messageMsgMatch[1]) ? 
+          messageMsgMatch[1].replace(/\\"/g, '"').replace(/"/g, '\\"') : 
+          "Error extracting response";
+        
+        const commandSuggestion = 
+          (commandSuggestionMatch && commandSuggestionMatch[1]) ? 
+          commandSuggestionMatch[1].replace(/\\"/g, '"').replace(/"/g, '\\"') : 
+          (commandMatch && commandMatch[1]) ? 
+          commandMatch[1].replace(/\\"/g, '"').replace(/"/g, '\\"') : 
+          "";
+        
+        // Create a new, clean JSON object
+        const cleanJson = `{"chat_msg": "${chatMsg}", "command_suggestion": "${commandSuggestion}"}`;
+        
+        console.log("Clean JSON created:", cleanJson);
+        
+        // Verify it's valid
+        JSON.parse(cleanJson);
+        return cleanJson;
+      }
+    } catch (error) {
+      console.error("Error sanitizing JSON:", error);
+      
+      // Always fall back to a valid JSON response with a helpful message
+      return '{"chat_msg": "Error processing response from LLM"}';
+    }
+  }
+
   async callOpenAI(messages) {
     // Validate configuration based on provider
     if (this.provider === 'custom') {
@@ -247,15 +310,30 @@ ${context.lastCommands.map(cmd => `- ${cmd}`).join('\n')}`;
     
     // Extract the JSON response
     try {
-      const content = data.choices[0].message.content;
+      const content = data.choices[0]?.message?.content || "{}";
       console.log("Raw LLM response:", content);
       
-      const jsonResponse = JSON.parse(content);
-      console.log("Parsed JSON response:", jsonResponse);
+      let jsonResponse;
+      try {
+        // Use the sanitizer to clean up the JSON
+        const cleanContent = this.sanitizeJsonString(content);
+        jsonResponse = JSON.parse(cleanContent);
+        console.log("Parsed JSON response:", jsonResponse);
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError.message);
+        console.error("Problematic JSON content:", content);
+        
+        // Create a default response with the raw content as the message
+        jsonResponse = {
+          chat_msg: content || "No explanation provided",
+          command_suggestion: ""
+        };
+      }
       
       // Extract chat message and command suggestion
-      const chatMsg = jsonResponse.chat_msg || "No explanation provided";
-      let commandSuggestion = jsonResponse.command_suggestion || "";
+      // First try to get from chat_msg, but also check message as a fallback
+      const chatMsg = jsonResponse.chat_msg || jsonResponse.message || "No explanation provided";
+      let commandSuggestion = jsonResponse.command_suggestion || jsonResponse.command || "";
       
       // If there's a command suggestion, return it in our special format
       if (commandSuggestion && commandSuggestion.trim() !== "") {
@@ -284,9 +362,9 @@ ${context.lastCommands.map(cmd => `- ${cmd}`).join('\n')}`;
       }
     } catch (error) {
       console.error("Error parsing JSON response:", error);
-      // Fallback to the raw content
+      // Fallback to the raw content or a default message
       return {
-        message: data.choices[0].message.content,
+        message: data.choices?.[0]?.message?.content || "Error processing response",
         shouldExecuteCommand: false
       };
     }
@@ -368,12 +446,27 @@ Please provide your response in JSON format with the following structure:
       const jsonMatch = content.match(/```(?:json)?(.*?)```/s) || content.match(/{.*}/s);
       const jsonStr = jsonMatch ? jsonMatch[0].replace(/```json?|```/g, '') : content;
       
-      const jsonResponse = JSON.parse(jsonStr);
-      console.log("Parsed Ollama JSON response:", jsonResponse);
+      let jsonResponse;
+      try {
+        // Use the sanitizer to clean up the JSON
+        const cleanContent = this.sanitizeJsonString(jsonStr);
+        jsonResponse = JSON.parse(cleanContent);
+        console.log("Parsed Ollama JSON response:", jsonResponse);
+      } catch (parseError) {
+        console.error("Ollama JSON parse error:", parseError.message);
+        console.error("Problematic JSON string:", jsonStr);
+        
+        // Create a default response with the raw content as the message
+        jsonResponse = {
+          chat_msg: content || "No explanation provided",
+          command_suggestion: ""
+        };
+      }
       
       // Extract chat message and command suggestion
-      const chatMsg = jsonResponse.chat_msg || "No explanation provided";
-      let commandSuggestion = jsonResponse.command_suggestion || "";
+      // First try to get from chat_msg, but also check message as a fallback
+      const chatMsg = jsonResponse.chat_msg || jsonResponse.message || "No explanation provided";
+      let commandSuggestion = jsonResponse.command_suggestion || jsonResponse.command || "";
       
       // If there's a command suggestion, return it in our special format
       if (commandSuggestion && commandSuggestion.trim() !== "") {
@@ -404,7 +497,7 @@ Please provide your response in JSON format with the following structure:
       console.error("Error parsing Ollama JSON response:", error);
       // Fall back to the original response
       return {
-        message: content,
+        message: content || "Error processing response",
         shouldExecuteCommand: false
       };
     }
@@ -452,12 +545,22 @@ Please provide your response in JSON format with the following structure:
       if (typeof response === 'string' && (response.startsWith('{') || response.includes('{'))) {
         const jsonMatch = response.match(/{.*}/s);
         if (jsonMatch) {
-          const jsonResponse = JSON.parse(jsonMatch[0]);
+          let jsonResponse;
+          try {
+            // Use the sanitizer to clean up the JSON
+            const cleanContent = this.sanitizeJsonString(jsonMatch[0]);
+            jsonResponse = JSON.parse(cleanContent);
+          } catch (parseError) {
+            console.error("Error parsing legacy JSON response:", parseError);
+            console.error("Problematic JSON content:", jsonMatch[0]);
+            // Continue to the next handler - will return raw text response
+            throw parseError;
+          }
           
-          if (jsonResponse.chat_msg || jsonResponse.command_suggestion) {
+          if (jsonResponse.chat_msg || jsonResponse.message || jsonResponse.command_suggestion || jsonResponse.command) {
             // It's our newer format
-            const chatMsg = jsonResponse.chat_msg || "No explanation provided";
-            let commandSuggestion = jsonResponse.command_suggestion || "";
+            const chatMsg = jsonResponse.chat_msg || jsonResponse.message || "No explanation provided";
+            let commandSuggestion = jsonResponse.command_suggestion || jsonResponse.command || "";
             
             if (commandSuggestion && commandSuggestion.trim() !== "") {
               // Extract command from tags if present
