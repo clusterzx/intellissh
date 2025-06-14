@@ -11,13 +11,15 @@ class EncryptionService {
   async init() {
     try {
       if (this.initialized && this.key) return;
-      
+
       await this.loadEncryptionKey();
       this.initialized = true;
     } catch (error) {
       console.error('Failed to initialize Encryption Service:', error);
       // Fall back to environment variable or generate a random key
       this.key = this.getFallbackEncryptionKey();
+      // Mark as initialized even when falling back so we don't retry on every call
+      this.initialized = true;
     }
   }
   
