@@ -33,6 +33,10 @@ class LLMService {
         this.baseUrl = await settingsService.getSettingValue('custom_api_url', userId);
         this.apiKey = await settingsService.getSettingValue('custom_api_key', userId);
         this.model = await settingsService.getSettingValue('custom_model', userId);
+      } else if (this.provider === 'gemini') {
+        this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
+        this.apiKey = await settingsService.getSettingValue('gemini_api_key', userId);
+        this.model = await settingsService.getSettingValue('gemini_model', userId);
       } else {
         // Ollama
         this.baseUrl = await settingsService.getSettingValue('ollama_url', userId);
@@ -85,6 +89,8 @@ class LLMService {
       let response;
       if (this.provider === 'openai' || this.provider === 'custom') {
         response = await this.callOpenAI(history);
+      } else if (this.provider === 'gemini') {
+        response = await this.callGemini(history);
       } else {
         response = await this.callOllama(history);
       }
@@ -402,6 +408,108 @@ Please provide your response in JSON format with the following structure:
       }
     } catch (error) {
       console.error("Error parsing Ollama JSON response:", error);
+      // Fall back to the original response
+      return {
+        message: content,
+        shouldExecuteCommand: false
+      };
+    }
+  }
+
+  async callGemini(messages) {
+    // Validate Gemini configuration
+    if (!this.apiKey || this.apiKey.trim() === '') {
+      throw new Error('Gemini API key not configured');
+    }
+
+    // Convert chat messages to Gemini format
+    const contents = [];
+    
+    for (const msg of messages) {
+      if (msg.role === 'system') {
+        // Gemini doesn't have a system role, prepend to first user message
+        continue;
+      }
+      
+      contents.push({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }]
+      });
+    }
+
+    // Add system message as first user message if present
+    const systemMessage = messages.find(msg => msg.role === 'system');
+    if (systemMessage && contents.length > 0) {
+      contents[0].parts[0].text = `${systemMessage.content}\n\n${contents[0].parts[0].text}`;
+    }
+
+    // Add structured output instructions
+    const structuredInstructions = `
+
+Please provide your response in JSON format with the following structure:
+{
+  "chat_msg": "Your explanation or answer to the query",
+  "command_suggestion": "command to execute (if needed, leave empty if none)"
+}`;
+
+    if (contents.length > 0) {
+      contents[contents.length - 1].parts[0].text += structuredInstructions;
+    }
+
+    const requestBody = {
+      contents: contents,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 1024,
+        responseMimeType: "application/json"
+      }
+    };
+
+    const response = await fetch(`${this.baseUrl}/models/${this.model}:generateContent?key=${this.apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Gemini API error: ${error || response.statusText}`);
+    }
+
+    const data = await response.json();
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    console.log("Raw Gemini response:", content);
+
+    // Try to parse the response as JSON
+    try {
+      const jsonResponse = JSON.parse(content);
+      console.log("Parsed Gemini JSON response:", jsonResponse);
+
+      const chatMsg = jsonResponse.chat_msg || "No explanation provided";
+      let commandSuggestion = jsonResponse.command_suggestion || "";
+
+      // If there's a command suggestion, return it in our special format
+      if (commandSuggestion && commandSuggestion.trim() !== "") {
+        console.log(`Gemini command detected: "${commandSuggestion}"`);
+        return {
+          message: chatMsg,
+          shouldExecuteCommand: false,
+          command: commandSuggestion,
+          reasoning: chatMsg,
+          requiresApproval: true
+        };
+      } else {
+        // No command suggestion
+        return {
+          message: chatMsg,
+          shouldExecuteCommand: false
+        };
+      }
+    } catch (error) {
+      console.error("Error parsing Gemini JSON response:", error);
       // Fall back to the original response
       return {
         message: content,

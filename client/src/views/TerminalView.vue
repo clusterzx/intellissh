@@ -656,7 +656,7 @@ const pasteFromClipboard = () => {
   navigator.clipboard.readText()
     .then(text => {
       if (text && terminal.value) {
-        terminalStore.sendInput(text)
+        terminal.value.paste(text)
       }
     })
     .catch(err => {
@@ -691,16 +691,6 @@ onMounted(async () => {
       }
     }
     
-    // Ctrl+V or Command+V to paste
-    if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-      navigator.clipboard.readText()
-        .then(text => {
-          if (text && terminal.value) {
-            terminalStore.sendInput(text)
-          }
-        })
-      e.preventDefault()
-    }
   })
 })
 

@@ -132,10 +132,11 @@
       <div class="mt-3 bg-slate-100 dark:bg-slate-700/30 rounded-lg p-3 border border-slate-200 dark:border-slate-700/50">
         <textarea 
           v-model="manualPrompt" 
-          placeholder="Ask the assistant for help or suggest a command..." 
+          placeholder="Ask the assistant for help or suggest a command... (Press Enter to send)" 
           class="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-500 transition-all duration-200"
           :disabled="!helperEnabled || isProcessing || !isReady"
           rows="3"
+          @keydown="handleKeydown"
         ></textarea>
         <div class="flex justify-between mt-2">
           <button 
@@ -227,6 +228,15 @@ const sendPrompt = async () => {
   }
 }
 
+const handleKeydown = (event) => {
+  // Send message on Enter key (without Shift)
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault()
+    sendPrompt()
+  }
+  // Allow Shift+Enter for new lines
+}
+
 const clearHelperHistory = () => {
   llmHelperStore.clearHistory()
 }
@@ -272,10 +282,10 @@ const getUniqueHistory = () => {
   const uniqueItems = [];
   const uniqueContentMap = new Map();
   
-  // Get items in reverse order (newest first)
-  const reversedHistory = [...history.value].reverse();
+  // Keep items in chronological order (oldest first, newest last)
+  const chronologicalHistory = [...history.value];
   
-  reversedHistory.forEach(item => {
+  chronologicalHistory.forEach(item => {
     // Create a unique identifier based on message content and timestamp
     const contentKey = item.type + '-' + 
                       (item.type === 'response' ? item.content.message : 

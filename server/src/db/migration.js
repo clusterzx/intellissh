@@ -190,6 +190,8 @@ async function insertDefaultSettings() {
     { id: 'custom_api_url', name: 'Custom API URL', value: '', category: 'llm', description: 'Base URL for custom OpenAI-compatible API', is_sensitive: 0 },
     { id: 'custom_api_key', name: 'Custom API Key', value: '', category: 'llm', description: 'API key for custom OpenAI-compatible API', is_sensitive: 1 },
     { id: 'custom_model', name: 'Custom Model', value: 'gpt-3.5-turbo', category: 'llm', description: 'Model name for custom API', is_sensitive: 0 },
+    { id: 'gemini_api_key', name: 'Gemini API Key', value: '', category: 'llm', description: 'API key for Google Gemini', is_sensitive: 1 },
+    { id: 'gemini_model', name: 'Gemini Model', value: 'gemini-2.5-flash', category: 'llm', description: 'Model name for Gemini', is_sensitive: 0 },
     
     // Encryption settings
     { id: 'encryption_key', name: 'Encryption Key', value: '736f4149702aae82ab6e45e64d977e3c6c1e9f7b29b368f61cafab1b9c2cc3b2', category: 'security', description: 'Encryption key for sensitive data', is_sensitive: 1 },
