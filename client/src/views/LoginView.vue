@@ -60,6 +60,18 @@
                 placeholder="Confirm your password"
               />
             </div>
+            <div v-if="requires2fa">
+              <label for="totpCode" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">2FA Code</label>
+              <input
+                id="totpCode"
+                v-model="totpCode"
+                name="totpCode"
+                type="text"
+                required
+                class="form-input w-full"
+                placeholder="Enter your 2FA code"
+              />
+            </div>
           </div>
 
           <!-- Error Messages -->
@@ -90,7 +102,7 @@
               class="btn-primary w-full py-2.5 justify-center"
             >
               <span v-if="loading" class="spinner mr-2"></span>
-              {{ isRegistering ? 'Create Account' : 'Sign in' }}
+              {{ requires2fa ? 'Verify & Sign in' : (isRegistering ? 'Create Account' : 'Sign in') }}
             </button>
           </div>
 
@@ -136,6 +148,7 @@ const route = useRoute()
 // State
 const isRegistering = ref(false)
 const loading = ref(false)
+const totpCode = ref('')
 const form = ref({
   username: '',
   password: '',
@@ -144,6 +157,7 @@ const form = ref({
 const errors = ref({})
 
 // Computed
+const requires2fa = computed(() => authStore.getRequires2fa)
 const hasErrors = computed(() => Object.keys(errors.value).length > 0 || authStore.authError)
 const allErrors = computed(() => {
   const errorList = Object.values(errors.value).flat()
@@ -206,6 +220,16 @@ const handleSubmit = async () => {
         const redirect = route.query.redirect || '/'
         router.push(redirect)
       }
+    } else if (requires2fa.value) {
+      // Handle 2FA login
+      const result = await authStore.loginWith2fa(
+        authStore.getTempUserFor2fa.id,
+        totpCode.value
+      )
+      if (result.success) {
+        const redirect = route.query.redirect || '/'
+        router.push(redirect)
+      }
     } else {
       const result = await authStore.login({
         username: form.value.username.trim(),
@@ -222,6 +246,7 @@ const handleSubmit = async () => {
     console.error('Authentication error:', error)
   } finally {
     loading.value = false
+    totpCode.value = '' // Clear 2FA code after attempt
   }
 }
 
@@ -229,6 +254,8 @@ const toggleMode = () => {
   isRegistering.value = !isRegistering.value
   errors.value = {}
   authStore.clearError()
+  authStore.requires2fa = false // Clear 2FA state
+  authStore.tempUserFor2fa = null // Clear temp user
   form.value.confirmPassword = ''
 }
 

@@ -182,19 +182,44 @@ const startServer = async () => {
     await runMigration();
     
     // Initialize services that need database settings
+    console.log('Attempting to require encryptionService...');
     const encryptionService = require('./services/encryptionService');
+    console.log('Attempting to require llmService...');
     const llmService = require('./services/llmService');
+    console.log('Attempting to require sessionService...');
     const sessionService = require('./services/sessionService');
-    
-    // Initialize services in parallel
+
+    console.log('Initializing services in parallel...');
     await Promise.all([
-      encryptionService.init(),
-      // We initialize LLM service with global settings for startup only
-      // User-specific settings will be loaded for each connection
-      llmService.init(),
-      sessionService.init()
+      (async () => {
+        try {
+          await encryptionService.init();
+          console.log('Encryption service initialized.');
+        } catch (e) {
+          console.error('Error initializing encryption service:', e);
+          throw e;
+        }
+      })(),
+      (async () => {
+        try {
+          await llmService.init();
+          console.log('LLM service initialized.');
+        } catch (e) {
+          console.error('Error initializing LLM service:', e);
+          throw e;
+        }
+      })(),
+      (async () => {
+        try {
+          await sessionService.init();
+          console.log('Session service initialized.');
+        } catch (e) {
+          console.error('Error initializing session service:', e);
+          throw e;
+        }
+      })()
     ]);
-    
+
     console.log('Services initialized with database settings');
     console.log('NOTE: LLM service is initialized with global settings at startup.');
     console.log('      User-specific settings will be loaded for each connection.');

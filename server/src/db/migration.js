@@ -1,5 +1,6 @@
 const db = require('./database');
 const { addCustomApiSettings } = require('./customApiMigration');
+const addTotpToUsersMigration = require('./addTotpToUsersMigration');
 
 async function runMigration() {
   try {
@@ -81,6 +82,7 @@ async function runMigration() {
     
     // Add custom API settings if they don't exist
     await addCustomApiSettings();
+    await addTotpToUsersMigration();
   } catch (error) {
     console.error('Migration failed:', error);
   }

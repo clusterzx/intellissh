@@ -102,7 +102,7 @@
       </div>
 
       <!-- Settings Form -->
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 mb-6">
+      <div v-if="activeCategory !== 'two_factor_auth'" class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 mb-6">
         <form @submit.prevent="saveSettings">
           <!-- Active Category Settings -->
           <div v-for="setting in activeCategorySettings" :key="setting.id" class="mb-6">
@@ -342,6 +342,91 @@
           </div>
         </form>
       </div>
+
+      <!-- Two-Factor Authentication Section -->
+      <div v-else-if="activeCategory === 'two_factor_auth'" class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 mb-6">
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Two-Factor Authentication (2FA)</h2>
+        
+        <div class="mb-4">
+          <p class="text-slate-700 dark:text-slate-300">
+            Status: 
+            <span :class="authStore.currentUser?.is2faEnabled ? 'text-green-600' : 'text-red-600'">
+              {{ authStore.currentUser?.is2faEnabled ? 'Enabled' : 'Disabled' }}
+            </span>
+          </p>
+        </div>
+
+        <div v-if="!authStore.currentUser?.is2faEnabled">
+          <h3 class="text-lg font-medium text-slate-900 dark:text-white mb-3">Enable 2FA</h3>
+          <p class="text-slate-600 dark:text-slate-400 mb-4">
+            To enable Two-Factor Authentication, scan the QR code with your authenticator app (e.g., Google Authenticator, Authy) and enter the 6-digit code.
+          </p>
+
+          <div class="flex flex-col items-center mb-6">
+            <button
+              @click="generate2faSecret"
+              :disabled="authStore.loading"
+              class="btn-primary px-4 py-2 mb-4"
+            >
+              <span v-if="authStore.loading" class="spinner mr-2"></span>
+              Generate New Secret
+            </button>
+
+            <div v-if="authStore.getOtpauthUrl" class="border p-4 rounded-lg bg-slate-50 dark:bg-slate-700">
+              <p class="text-center text-sm text-slate-600 dark:text-slate-400 mb-2">Scan this QR code:</p>
+              <qrcode-vue :value="authStore.getOtpauthUrl" :size="200" level="H" class="mx-auto mb-4"></qrcode-vue>
+              <p class="text-center text-sm font-mono text-slate-800 dark:text-slate-200 break-all">{{ authStore.getTotpSecret }}</p>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label for="totpCodeEnable" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">6-Digit Code</label>
+            <input
+              id="totpCodeEnable"
+              v-model="totpCodeInput"
+              type="text"
+              placeholder="Enter 6-digit code"
+              class="form-input w-full"
+            />
+          </div>
+
+          <button
+            @click="enable2fa"
+            :disabled="authStore.loading || !totpCodeInput || !authStore.getTotpSecret"
+            class="btn-primary px-4 py-2"
+          >
+            <span v-if="authStore.loading" class="spinner mr-2"></span>
+            Enable 2FA
+          </button>
+        </div>
+
+        <div v-else>
+          <h3 class="text-lg font-medium text-slate-900 dark:text-white mb-3">Disable 2FA</h3>
+          <p class="text-slate-600 dark:text-slate-400 mb-4">
+            To disable Two-Factor Authentication, enter your current 6-digit code.
+          </p>
+
+          <div class="mb-4">
+            <label for="totpCodeDisable" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">6-Digit Code</label>
+            <input
+              id="totpCodeDisable"
+              v-model="totpCodeInput"
+              type="text"
+              placeholder="Enter 6-digit code"
+              class="form-input w-full"
+            />
+          </div>
+
+          <button
+            @click="disable2fa"
+            :disabled="authStore.loading || !totpCodeInput"
+            class="btn-danger px-4 py-2"
+          >
+            <span v-if="authStore.loading" class="spinner mr-2"></span>
+            Disable 2FA
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -351,6 +436,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
+import QrcodeVue from 'qrcode.vue';
 
 const settingsStore = useSettingsStore();
 const authStore = useAuthStore();
@@ -360,19 +446,26 @@ const originalValues = ref({});
 const showSensitive = ref({});
 const isSaving = ref(false);
 const userSettings = ref(false);
+const totpCodeInput = ref('');
+const showQrCode = ref(false);
 const isAdmin = computed(() => authStore.user?.role === 'admin');
 
 // Computed property to filter visible categories based on user role and settings mode
 const visibleCategories = computed(() => {
-  const allCategories = settingsStore.uniqueCategories;
+  let categories = settingsStore.uniqueCategories;
   
-  // If user is admin and in global settings mode, show all categories
+  // Only add two_factor_auth category if in user settings mode
+  if (userSettings.value) {
+    categories = [...categories, 'two_factor_auth'];
+  }
+
+  // If user is admin and in global settings mode, show all categories (except 2FA if not in user settings)
   if (isAdmin.value && !userSettings.value) {
-    return allCategories;
+    return categories; // This 'categories' will not include 'two_factor_auth' here
   }
   
-  // Otherwise, filter out admin-only categories
-  return allCategories.filter(category => category !== 'email');
+  // Otherwise, filter out admin-only categories (like 'email')
+  return categories.filter(category => category !== 'email');
 });
 
 // Computed property to get settings for the active category
@@ -401,6 +494,8 @@ const getCategoryLabel = (category) => {
       return 'Server';
     case 'email':
       return 'Email Settings';
+    case 'two_factor_auth':
+      return 'Two-Factor Authentication';
     default:
       return category.charAt(0).toUpperCase() + category.slice(1);
   }
@@ -568,6 +663,10 @@ const reloadSettings = async () => {
 const toggleSettingsScope = async () => {
   userSettings.value = !userSettings.value;
   await loadSettings();
+  // Set active category to the first visible category for the new scope
+  if (visibleCategories.value.length > 0) {
+    activeCategory.value = visibleCategories.value[0];
+  }
 };
 
 // Toggle registration enabled/disabled
@@ -621,6 +720,66 @@ const toggleRegistration = async () => {
   } finally {
     isSaving.value = false;
   }
+};
+
+// 2FA Methods
+const generate2faSecret = async () => {
+  try {
+    await authStore.generate2faSecret();
+    showQrCode.value = true;
+  } catch (error) {
+    console.error('Failed to generate 2FA secret:', error);
+    alert('Error generating 2FA secret: ' + (error.message || 'Unknown error'));
+  }
+};
+
+const enable2fa = async () => {
+  if (!totpCodeInput.value) {
+    alert('Please enter the 6-digit code.');
+    return;
+  }
+  if (!authStore.getTotpSecret) {
+    alert('Please generate a secret first.');
+    return;
+  }
+  try {
+    const result = await authStore.enable2fa(totpCodeInput.value, authStore.getTotpSecret);
+    if (result.success) {
+      alert('2FA enabled successfully!');
+      reset2faForm();
+    } else {
+      alert('Failed to enable 2FA: ' + (result.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Failed to enable 2FA:', error);
+    alert('Error enabling 2FA: ' + (error.message || 'Unknown error'));
+  }
+};
+
+const disable2fa = async () => {
+  if (!totpCodeInput.value) {
+    alert('Please enter the 6-digit code.');
+    return;
+  }
+  try {
+    const result = await authStore.disable2fa(totpCodeInput.value);
+    if (result.success) {
+      alert('2FA disabled successfully!');
+      reset2faForm();
+    } else {
+      alert('Failed to disable 2FA: ' + (result.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Failed to disable 2FA:', error);
+    alert('Error disabling 2FA: ' + (error.message || 'Unknown error'));
+  }
+};
+
+const reset2faForm = () => {
+  totpCodeInput.value = '';
+  showQrCode.value = false;
+  authStore.totpSecret = null;
+  authStore.otpauthUrl = null;
 };
 
 // Direct reset bypassing the store - for troubleshooting
@@ -698,7 +857,9 @@ const testApi = async () => {
 // Watch for changes to active category
 watch(activeCategory, async (newCategory) => {
   // Only fetch if the store doesn't have settings for this category yet
-  if (!settingsStore.getSettingsByCategory(newCategory).length && settingsStore.initialized) {
+  if (newCategory === 'two_factor_auth') {
+    reset2faForm();
+  } else if (!settingsStore.getSettingsByCategory(newCategory).length && settingsStore.initialized) {
     try {
       await settingsStore.fetchSettingsByCategory(newCategory, userSettings.value);
       initializeForm();
@@ -716,13 +877,9 @@ onMounted(async () => {
     initializeForm();
   }
   
-  // Set initial active category based on user role
-  if (!isAdmin.value || userSettings.value) {
-    // For non-admins or user settings mode, default to LLM settings
-    activeCategory.value = 'llm';
-  } else {
-    // For admins in global mode, default to Email settings
-    activeCategory.value = 'email';
+  // Set initial active category based on the first visible category
+  if (visibleCategories.value.length > 0) {
+    activeCategory.value = visibleCategories.value[0];
   }
 });
 </script>

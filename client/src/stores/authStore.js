@@ -8,6 +8,10 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('token'))
   const loading = ref(false)
   const error = ref(null)
+  const requires2fa = ref(false)
+  const tempUserFor2fa = ref(null)
+  const totpSecret = ref(null)
+  const otpauthUrl = ref(null)
 
   // Configure axios defaults
   if (token.value) {
@@ -20,6 +24,10 @@ export const useAuthStore = defineStore('auth', () => {
   const currentUser = computed(() => user.value)
   const authError = computed(() => error.value)
   const userEmail = computed(() => user.value?.email || '')
+  const getRequires2fa = computed(() => requires2fa.value)
+  const getTempUserFor2fa = computed(() => tempUserFor2fa.value)
+  const getTotpSecret = computed(() => totpSecret.value)
+  const getOtpauthUrl = computed(() => otpauthUrl.value)
 
   // Actions
   const login = async (credentials) => {
@@ -28,7 +36,13 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const response = await axios.post('/api/auth/login', credentials)
-      const { token: authToken, user: userData } = response.data
+      const { token: authToken, user: userData, requires2fa: is2faRequired } = response.data
+
+      if (is2faRequired) {
+        requires2fa.value = true
+        tempUserFor2fa.value = userData
+        return { success: true, requires2fa: true }
+      }
 
       // Store token and user data
       token.value = authToken
@@ -38,9 +52,100 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('token', authToken)
       axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`
 
-      return { success: true }
+      return { success: true, requires2fa: false }
     } catch (err) {
       error.value = err.response?.data?.error || 'Login failed'
+      return { success: false, error: error.value }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const loginWith2fa = async (userId, totpCode) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await axios.post('/api/auth/2fa/login', { userId, totpCode })
+      const { token: authToken, user: userData } = response.data
+
+      token.value = authToken
+      user.value = userData
+      requires2fa.value = false // Reset 2FA requirement
+      tempUserFor2fa.value = null
+      
+      localStorage.setItem('token', authToken)
+      axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`
+
+      return { success: true }
+    } catch (err) {
+      error.value = err.response?.data?.error || '2FA login failed'
+      return { success: false, error: error.value }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const generate2faSecret = async () => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await axios.post('/api/auth/2fa/generate-secret')
+      totpSecret.value = response.data.secret
+      otpauthUrl.value = response.data.otpauthUrl
+      return { success: true, data: response.data }
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Failed to generate 2FA secret'
+      return { success: false, error: error.value }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const verify2faCode = async (totpCode) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await axios.post('/api/auth/2fa/verify', { totpCode })
+      return { success: true, data: response.data }
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Failed to verify 2FA code'
+      return { success: false, error: error.value }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const enable2fa = async (totpCode, secret) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await axios.post('/api/auth/2fa/enable', { totpCode, secret })
+      // After enabling, refresh user data to reflect 2FA status
+      await fetchUser()
+      return { success: true, data: response.data }
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Failed to enable 2FA'
+      return { success: false, error: error.value }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const disable2fa = async (totpCode) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const response = await axios.post('/api/auth/2fa/disable', { totpCode })
+      // After disabling, refresh user data to reflect 2FA status
+      await fetchUser()
+      return { success: true, data: response.data }
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Failed to disable 2FA'
       return { success: false, error: error.value }
     } finally {
       loading.value = false
@@ -246,6 +351,10 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     loading,
     error,
+    requires2fa,
+    tempUserFor2fa,
+    totpSecret,
+    otpauthUrl,
     
     // Getters
     isAuthenticated,
@@ -253,9 +362,14 @@ export const useAuthStore = defineStore('auth', () => {
     currentUser,
     authError,
     userEmail,
+    getRequires2fa,
+    getTempUserFor2fa,
+    getTotpSecret,
+    getOtpauthUrl,
     
     // Actions
     login,
+    loginWith2fa,
     register,
     logout,
     fetchUser,
@@ -267,6 +381,10 @@ export const useAuthStore = defineStore('auth', () => {
     requestPasswordReset,
     verifyResetToken,
     resetPassword,
+    generate2faSecret,
+    verify2faCode,
+    enable2fa,
+    disable2fa,
     init
   }
 })
