@@ -40,6 +40,8 @@ IntelliSSH helps system administrators and developers access and control remote 
 ## 🔐 Key Features
 
 - **Authentication**: Secure login with JWT and bcrypt  
+- **Credential Management**: Securely manage credentials for SSH session connections.
+- **Two-Factor Authentication (TOTP)**: Enhance security with Time-based One-Time Password verification.
 - **SSH Sessions**: Create, edit, test, and connect  
 - **Terminal**: Full emulation, copy/paste, resize  
 - **AI Assistant**: Context-aware help and suggestions  
