@@ -10,6 +10,7 @@ import SettingsView from '@/views/SettingsView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
 import ResetPasswordView from '@/views/ResetPasswordView.vue'
+import CredentialsView from '@/views/CredentialsView.vue'
 
 const routes = [
   {
@@ -67,6 +68,12 @@ const routes = [
     component: ResetPasswordView,
     meta: { requiresAuth: false },
     props: true
+  },
+  {
+    path: '/credentials',
+    name: 'credentials',
+    component: CredentialsView,
+    meta: { requiresAuth: true }
   },
   // Catch all redirect to home
   {

@@ -380,20 +380,27 @@ const confirmDelete = async () => {
 }
 
 const connectToSession = async (session) => {
-  connectingToSession.value = session.id
+  connectingToSession.value = session.id;
   
   try {
-    // Navigate to terminal view
-    router.push(`/terminal/${session.id}`)
+    if (terminalStore.getPersistedSessions[session.id]) {
+      console.log(`Attempting to reattach to session: ${session.id}`);
+      await terminalStore.reattachToSession(session.id);
+    } else {
+      console.log(`Attempting to connect to new session: ${session.id}`);
+      // The actual connection logic is now handled by connectToSession in terminalStore
+      // which will either connect or reattach based on persisted state.
+    }
+    router.push(`/terminal/${session.id}`);
   } catch (error) {
-    console.error('Failed to connect to session:', error)
-    connectingToSession.value = null
+    console.error('Failed to connect/reattach to session:', error);
+    connectingToSession.value = null;
   }
-}
+};
 
 const isSessionConnected = (sessionId) => {
-  return terminalStore.hasActiveSession && 
-         terminalStore.activeSession?.id === sessionId
+  return (terminalStore.hasActiveSession && terminalStore.activeSession?.id === sessionId) ||
+         (terminalStore.getPersistedSessions[sessionId] !== undefined);
 }
 
 const closeModal = () => {
@@ -474,23 +481,10 @@ const handleNavigateBack = () => {
 // Helper function to refresh sessions with proper error handling
 const refreshSessions = async () => {
   try {
-    // Set a safety timeout to ensure loading state is cleared
-    const safetyTimeout = setTimeout(() => {
-      if (sessionStore.isLoading) {
-        console.warn('Fetch sessions timeout - forcing loading state clear')
-        sessionStore.clearLoadingState()
-      }
-    }, 3000)
-    
     // Fetch the sessions
     await sessionStore.fetchSessions()
-    
-    // Clear the timeout if successful
-    clearTimeout(safetyTimeout)
   } catch (err) {
     console.error('Failed to refresh sessions:', err)
-    // Ensure loading state is reset even on error
-    sessionStore.clearLoadingState()
   }
 }
 
@@ -502,35 +496,17 @@ const openFullScreenSnapshot = (snapshotUrl) => {
 // Force refresh function for the manual refresh button
 const forceRefreshSessions = async () => {
   console.log('Manual refresh triggered')
-  
+
   // First clear any loading state and reset sessions
   sessionStore.clearLoadingState()
-  
-  // Directly fetch from API bypassing any caches
+
+  // Use the store's fetchSessions method to ensure proper authentication and error handling
   try {
-    const response = await fetch('/api/sessions', {
-      method: 'GET',
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      },
-      credentials: 'same-origin'
-    })
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    const data = await response.json()
-    
-    // Manually update the store
-    sessionStore.sessions.value = data.sessions
-    console.log('Manual refresh successful:', data.sessions.length, 'sessions loaded')
+    await sessionStore.fetchSessions()
+    console.log('Manual refresh successful via sessionStore.fetchSessions()')
   } catch (err) {
     console.error('Manual refresh failed:', err)
-    // Make sure we have an empty array at minimum
-    sessionStore.sessions.value = []
+    // The sessionStore.fetchSessions() already handles setting error state and clearing sessions on failure
   }
 }
 </script>

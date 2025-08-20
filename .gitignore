@@ -2,3 +2,5 @@ node_modules/
 .env
 *.db
 *.db.bak
+client/dist/
+.DS_Store

@@ -46,6 +46,15 @@
               >
                 Profile
               </router-link>
+              <router-link
+                to="/credentials"
+                class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors"
+                :class="$route.name === 'credentials' 
+                  ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400' 
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'"
+              >
+                Credentials
+              </router-link>
             </div>
           </div>
 
