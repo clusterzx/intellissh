@@ -101,7 +101,36 @@
               />
               <span class="ml-2 text-sm text-slate-700 dark:text-slate-300">SSH Agent</span>
             </label>
+            <label class="inline-flex items-center">
+              <input
+                v-model="authMethod"
+                value="credential"
+                type="radio"
+                class="w-4 h-4 text-indigo-600 dark:text-indigo-500 border-slate-300 dark:border-slate-600 focus:ring-indigo-500 dark:focus:ring-indigo-400"
+              />
+              <span class="ml-2 text-sm text-slate-700 dark:text-slate-300">Saved Credential</span>
+            </label>
           </div>
+        </div>
+
+        <!-- Credential Selection Field -->
+        <div v-if="authMethod === 'credential'">
+          <label for="credentialSelect" class="form-label">Select Credential</label>
+          <select
+            id="credentialSelect"
+            v-model="selectedCredentialId"
+            class="form-input"
+            :class="{ 'border-red-300 dark:border-red-500': errors.credentialId }"
+          >
+            <option :value="null" disabled>-- Select a credential --</option>
+            <option v-for="cred in credentialStore.credentials" :key="cred.id" :value="cred.id">
+              {{ cred.name }} ({{ cred.username }})
+            </option>
+          </select>
+          <p v-if="errors.credentialId" class="form-error">{{ errors.credentialId }}</p>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Manage your saved credentials in the <router-link to="/credentials" class="text-indigo-600 hover:underline">Credential Management</router-link> section.
+          </p>
         </div>
 
         <!-- Password Field -->
@@ -204,6 +233,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useSessionStore } from '@/stores/sessionStore'
+import { useCredentialStore } from '@/stores/credentialStore'
 
 // Props
 const props = defineProps({
@@ -218,6 +248,7 @@ const emit = defineEmits(['close', 'saved'])
 
 // Store
 const sessionStore = useSessionStore()
+const credentialStore = useCredentialStore()
 
 // State
 const form = ref({
@@ -227,9 +258,11 @@ const form = ref({
   username: '',
   password: '',
   privateKey: '',
-  keyPassphrase: ''
+  keyPassphrase: '',
+  credentialId: null
 })
 
+const selectedCredentialId = ref(null)
 const authMethod = ref('password')
 const errors = ref({})
 const globalError = ref('')
@@ -265,6 +298,10 @@ const validateForm = () => {
   if (authMethod.value === 'key' && !form.value.privateKey.trim()) {
     errors.value.privateKey = 'Private key is required'
   }
+
+  if (authMethod.value === 'credential' && !selectedCredentialId.value) {
+    errors.value.credentialId = 'Please select a saved credential'
+  }
   
   return Object.keys(errors.value).length === 0
 }
@@ -283,9 +320,18 @@ const handleSubmit = async () => {
       hostname: form.value.hostname.trim(),
       port: form.value.port || 22,
       username: form.value.username.trim(),
-      password: authMethod.value === 'password' ? form.value.password : '',
-      privateKey: authMethod.value === 'key' ? form.value.privateKey.trim() : '',
-      keyPassphrase: authMethod.value === 'key' ? form.value.keyPassphrase : ''
+    };
+
+    if (authMethod.value === 'credential') {
+      sessionData.credentialId = selectedCredentialId.value;
+      sessionData.password = ''; // Ensure direct password is not sent
+      sessionData.privateKey = ''; // Ensure direct private key is not sent
+      sessionData.keyPassphrase = ''; // Ensure direct passphrase is not sent
+    } else {
+      sessionData.password = authMethod.value === 'password' ? form.value.password : '';
+      sessionData.privateKey = authMethod.value === 'key' ? form.value.privateKey.trim() : '';
+      sessionData.keyPassphrase = authMethod.value === 'key' ? form.value.keyPassphrase : '';
+      sessionData.credentialId = null; // Ensure credentialId is not sent if not using a saved credential
     }
     
     let result
@@ -315,9 +361,11 @@ const resetForm = () => {
     username: '',
     password: '',
     privateKey: '',
-    keyPassphrase: ''
+    keyPassphrase: '',
+    credentialId: null
   }
   authMethod.value = 'password'
+  selectedCredentialId.value = null
   errors.value = {}
   globalError.value = ''
 }
@@ -331,19 +379,23 @@ const loadSession = () => {
       username: props.session.username || '',
       password: '', // Don't pre-fill password for security
       privateKey: '', // Don't pre-fill private key for security
-      keyPassphrase: '' // Don't pre-fill passphrase for security
-    }
-    
+      keyPassphrase: '', // Don't pre-fill passphrase for security
+      credentialId: props.session.credentialId || null
+    };
+
     // Determine auth method based on existing session
-    if (props.session.hasPassword) {
-      authMethod.value = 'password'
+    if (props.session.credentialId) {
+      authMethod.value = 'credential';
+      selectedCredentialId.value = props.session.credentialId;
+    } else if (props.session.hasPassword) {
+      authMethod.value = 'password';
     } else if (props.session.hasPrivateKey) {
-      authMethod.value = 'key'
+      authMethod.value = 'key';
     } else {
-      authMethod.value = 'agent'
+      authMethod.value = 'agent';
     }
   }
-}
+};
 
 // Watchers
 watch(() => authMethod.value, () => {
@@ -362,10 +414,24 @@ watch(() => authMethod.value, () => {
   }
 })
 
-// Lifecycle
-onMounted(() => {
-  if (props.session) {
-    loadSession()
+watch(selectedCredentialId, (newVal) => {
+  if (newVal) {
+    const selectedCred = credentialStore.credentials.find(c => c.id === newVal);
+    if (selectedCred) {
+      form.value.username = selectedCred.username;
+      // Clear direct credentials when a saved credential is selected
+      form.value.password = '';
+      form.value.privateKey = '';
+      form.value.keyPassphrase = '';
+    }
   }
-})
+});
+
+// Lifecycle
+onMounted(async () => {
+  await credentialStore.fetchCredentials();
+  if (props.session) {
+    loadSession();
+  }
+});
 </script>

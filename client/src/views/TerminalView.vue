@@ -298,6 +298,7 @@ import { APP_VERSION } from '@/utils/constants'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import { WebLinksAddon } from 'xterm-addon-web-links'
+
 import { useTerminalStore } from '@/stores/terminalStore'
 import { useSessionStore } from '@/stores/sessionStore'
 import LLMHelper from '@/components/LLMHelper.vue'
@@ -323,6 +324,7 @@ const router = useRouter()
 const terminalContainer = ref(null)
 const terminal = ref(null)
 const fitAddon = ref(null)
+
 const loading = ref(false)
 const loadingMessage = ref('')
 const error = ref('')
@@ -418,13 +420,7 @@ const initializeTerminal = () => {
   // Initialize the terminal UI
   terminal.value.open(terminalContainer.value)
   
-  // Try to load the WebGL addon for better performance
-  try {
-    const webglAddon = new WebglAddon()
-    terminal.value.loadAddon(webglAddon)
-  } catch (error) {
-    console.warn('WebGL addon could not be loaded:', error)
-  }
+  
   
   // Use nextTick to ensure the DOM has updated before fitting
   nextTick(() => {
@@ -530,26 +526,33 @@ const captureTerminalSnapshot = async () => {
 }
 
 const disconnect = async () => {
+  console.log('Disconnect button clicked.');
   // Capture terminal snapshot before disconnecting
   if (terminalStore.hasActiveSession && terminalReady.value && currentSession.value) {
     try {
-      const snapshotData = await captureTerminalSnapshot()
+      console.log('Attempting to capture terminal snapshot...');
+      const snapshotData = await captureTerminalSnapshot();
       if (snapshotData) {
+        console.log('Snapshot captured, attempting to save...');
         // Save snapshot to the server
-        await sessionStore.saveConsoleSnapshot(currentSession.value.id, snapshotData)
-        console.log('Terminal snapshot saved for session:', currentSession.value.id)
+        await sessionStore.saveConsoleSnapshot(currentSession.value.id, snapshotData);
+        console.log('Terminal snapshot saved for session:', currentSession.value.id);
+      } else {
+        console.warn('No snapshot data captured.');
       }
     } catch (error) {
-      console.error('Failed to save terminal snapshot:', error)
+      console.error('Failed to save terminal snapshot:', error);
     }
   }
   
   // Disconnect session
-  terminalStore.disconnectSession()
-  if (terminal.value) {
-    terminal.value.clear()
-  }
-}
+  console.log('Calling terminalStore.disconnectSession()...');
+  await terminalStore.disconnectSession();
+  console.log('Disconnect process initiated.');
+
+  // Redirect to homepage after successful disconnection
+  router.push('/');
+};
 
 const handleResize = () => {
   if (fitAddon.value && terminalReady.value) {
@@ -665,6 +668,31 @@ const pasteFromClipboard = () => {
   closeContextMenu()
 }
 
+const handleKeydown = (e) => {
+  // Only process if terminal is focused
+  if (!terminal.value || !document.activeElement.closest('.terminal-container')) return
+  
+  // Ctrl+C or Command+C to copy
+  if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !e.shiftKey) {
+    const selection = terminal.value.getSelection()
+    if (selection) {
+      navigator.clipboard.writeText(selection)
+      e.preventDefault()
+    }
+  }
+  
+  // Ctrl+V or Command+V to paste
+  if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+    navigator.clipboard.readText()
+      .then(text => {
+        if (text && terminal.value) {
+          terminalStore.sendInput(text)
+        }})
+      e.preventDefault()
+    }
+  }
+
+
 onMounted(async () => {
   // Load session data
   await loadSession()
@@ -678,44 +706,40 @@ onMounted(async () => {
   window.addEventListener('resize', handleResize)
   
   // Add keyboard shortcuts for copy/paste
-  document.addEventListener('keydown', (e) => {
-    // Only process if terminal is focused
-    if (!terminal.value || !document.activeElement.closest('.terminal-container')) return
-    
-    // Ctrl+C or Command+C to copy
-    if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !e.shiftKey) {
-      const selection = terminal.value.getSelection()
-      if (selection) {
-        navigator.clipboard.writeText(selection)
-        e.preventDefault()
-      }
-    }
-    
-    // Ctrl+V or Command+V to paste
-    if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-      navigator.clipboard.readText()
-        .then(text => {
-          if (text && terminal.value) {
-            terminalStore.sendInput(text)
-          }
-        })
-      e.preventDefault()
-    }
-  })
+  document.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
   // Clean up
   window.removeEventListener('resize', handleResize)
   document.removeEventListener('click', closeContextMenu)
-  document.removeEventListener('keydown', null)
-  
-  if (terminal.value) {
-    terminal.value.dispose()
+  document.removeEventListener('keydown', handleKeydown)
+
+  // console.log('TerminalView: onUnmounted - Starting dispose operations.');
+
+  // Dispose of addons only if they were loaded
+  if (fitAddon.value) {
+    try { // Add try-catch for fitAddon
+      // console.log('TerminalView: Disposing fitAddon.');
+      fitAddon.value.dispose();
+      fitAddon.value = null; // Set to null after disposing
+    } catch (e) {
+      // console.error('TerminalView: Error disposing fitAddon:', e);
+    }
   }
   
-  // Disconnect from session
-  terminalStore.disconnectSession()
+  // Then dispose of the terminal
+  if (terminal.value) {
+    // console.log('TerminalView: Disposing terminal instance.');
+    terminal.value.dispose()
+    terminal.value = null; // Set to null after disposing
+  }
+  // console.log('TerminalView: onUnmounted - Dispose operations completed.');
+
+  // Force a page reload to ensure the HomeView renders correctly
+  // This is a workaround for unhandled errors during component unmount
+  // that might prevent Vue from updating the DOM.
+  window.location.reload();
 })
 </script>
 
