@@ -3,14 +3,14 @@
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full mx-4 max-h-screen overflow-y-auto animate-fade-in">
       <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
         <h3 class="text-xl font-medium text-slate-900 dark:text-white">
-          {{ isEditing ? 'Edit Session' : 'New Session' }}
+          {{ isEditing ? $t('message.edit_session') : $t('message.new_session_form') }}
         </h3>
       </div>
 
       <form @submit.prevent="handleSubmit" class="px-6 py-5 space-y-5">
         <!-- Session Name -->
         <div>
-          <label for="name" class="form-label">Session Name</label>
+          <label for="name" class="form-label">{{ $t('message.session_name') }}</label>
           <input
             id="name"
             v-model="form.name"
@@ -18,14 +18,14 @@
             required
             class="form-input"
             :class="{ 'border-red-300 dark:border-red-500': errors.name }"
-            placeholder="My Server"
+            :placeholder="$t('message.my_server')"
           />
           <p v-if="errors.name" class="form-error">{{ errors.name }}</p>
         </div>
 
         <!-- Hostname -->
         <div>
-          <label for="hostname" class="form-label">Hostname/IP</label>
+          <label for="hostname" class="form-label">{{ $t('message.hostname_ip_label') }}</label>
           <input
             id="hostname"
             v-model="form.hostname"
@@ -41,7 +41,7 @@
         <!-- Port and Username -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label for="port" class="form-label">Port</label>
+            <label for="port" class="form-label">{{ $t('message.port_label') }}</label>
             <input
               id="port"
               v-model.number="form.port"
@@ -56,7 +56,7 @@
           </div>
           
           <div>
-            <label for="username" class="form-label">Username</label>
+            <label for="username" class="form-label">{{ $t('message.username_label_form') }}</label>
             <input
               id="username"
               v-model="form.username"
@@ -72,7 +72,7 @@
 
         <!-- Authentication Method -->
         <div>
-          <label class="form-label">Authentication Method</label>
+          <label class="form-label">{{ $t('message.authentication_method') }}</label>
           <div class="mt-2 space-y-2">
             <label class="inline-flex items-center">
               <input
@@ -81,7 +81,7 @@
                 type="radio"
                 class="w-4 h-4 text-indigo-600 dark:text-indigo-500 border-slate-300 dark:border-slate-600 focus:ring-indigo-500 dark:focus:ring-indigo-400"
               />
-              <span class="ml-2 text-sm text-slate-700 dark:text-slate-300">Password</span>
+              <span class="ml-2 text-sm text-slate-700 dark:text-slate-300">{{ $t('message.password_auth') }}</span>
             </label>
             <label class="inline-flex items-center">
               <input
@@ -90,7 +90,7 @@
                 type="radio"
                 class="w-4 h-4 text-indigo-600 dark:text-indigo-500 border-slate-300 dark:border-slate-600 focus:ring-indigo-500 dark:focus:ring-indigo-400"
               />
-              <span class="ml-2 text-sm text-slate-700 dark:text-slate-300">Private Key</span>
+              <span class="ml-2 text-sm text-slate-700 dark:text-slate-300">{{ $t('message.private_key_auth') }}</span>
             </label>
             <label class="inline-flex items-center">
               <input
@@ -99,7 +99,7 @@
                 type="radio"
                 class="w-4 h-4 text-indigo-600 dark:text-indigo-500 border-slate-300 dark:border-slate-600 focus:ring-indigo-500 dark:focus:ring-indigo-400"
               />
-              <span class="ml-2 text-sm text-slate-700 dark:text-slate-300">SSH Agent</span>
+              <span class="ml-2 text-sm text-slate-700 dark:text-slate-300">{{ $t('message.ssh_agent_auth') }}</span>
             </label>
             <label class="inline-flex items-center">
               <input
@@ -108,75 +108,75 @@
                 type="radio"
                 class="w-4 h-4 text-indigo-600 dark:text-indigo-500 border-slate-300 dark:border-slate-600 focus:ring-indigo-500 dark:focus:ring-indigo-400"
               />
-              <span class="ml-2 text-sm text-slate-700 dark:text-slate-300">Saved Credential</span>
+              <span class="ml-2 text-sm text-slate-700 dark:text-slate-300">{{ $t('message.saved_credential_auth') }}</span>
             </label>
           </div>
         </div>
 
         <!-- Credential Selection Field -->
         <div v-if="authMethod === 'credential'">
-          <label for="credentialSelect" class="form-label">Select Credential</label>
+          <label for="credentialSelect" class="form-label">{{ $t('message.select_credential') }}</label>
           <select
             id="credentialSelect"
             v-model="selectedCredentialId"
             class="form-input"
             :class="{ 'border-red-300 dark:border-red-500': errors.credentialId }"
           >
-            <option :value="null" disabled>-- Select a credential --</option>
+            <option :value="null" disabled>{{ $t('message.select_credential_placeholder') }}</option>
             <option v-for="cred in credentialStore.credentials" :key="cred.id" :value="cred.id">
               {{ cred.name }} ({{ cred.username }})
             </option>
           </select>
           <p v-if="errors.credentialId" class="form-error">{{ errors.credentialId }}</p>
           <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Manage your saved credentials in the <router-link to="/credentials" class="text-indigo-600 hover:underline">Credential Management</router-link> section.
+            {{ $t('message.manage_credentials_note') }}
           </p>
         </div>
 
         <!-- Password Field -->
         <div v-if="authMethod === 'password'">
-          <label for="password" class="form-label">Password</label>
+          <label for="password" class="form-label">{{ $t('message.password_field_label') }}</label>
           <input
             id="password"
             v-model="form.password"
             type="password"
             class="form-input"
             :class="{ 'border-red-300 dark:border-red-500': errors.password }"
-            placeholder="Enter password"
+            :placeholder="$t('message.enter_password_placeholder_form')"
           />
           <p v-if="errors.password" class="form-error">{{ errors.password }}</p>
         </div>
 
         <!-- Private Key Field -->
         <div v-if="authMethod === 'key'">
-          <label for="privateKey" class="form-label">Private Key</label>
+          <label for="privateKey" class="form-label">{{ $t('message.private_key_field_label') }}</label>
           <textarea
             id="privateKey"
             v-model="form.privateKey"
             rows="4"
             class="form-input resize-none font-mono text-xs"
             :class="{ 'border-red-300 dark:border-red-500': errors.privateKey }"
-            placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----"
+            :placeholder="$t('message.private_key_placeholder_form')"
           ></textarea>
           <p v-if="errors.privateKey" class="form-error">{{ errors.privateKey }}</p>
           <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Paste your private key content here. The key will be encrypted before storage.
+            {{ $t('message.private_key_storage_note') }}
           </p>
           
           <!-- Key Passphrase Field -->
           <div class="mt-3">
-            <label for="keyPassphrase" class="form-label">Passphrase (if key is encrypted)</label>
+            <label for="keyPassphrase" class="form-label">{{ $t('message.passphrase_field_label') }}</label>
             <input
               id="keyPassphrase"
               v-model="form.keyPassphrase"
               type="password"
               class="form-input"
               :class="{ 'border-red-300 dark:border-red-500': errors.keyPassphrase }"
-              placeholder="Enter passphrase for encrypted key"
+              :placeholder="$t('message.enter_passphrase_placeholder_form')"
             />
             <p v-if="errors.keyPassphrase" class="form-error">{{ errors.keyPassphrase }}</p>
             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              If your private key is encrypted, enter the passphrase to decrypt it.
+              {{ $t('message.passphrase_decrypt_note') }}
             </p>
           </div>
         </div>
@@ -189,8 +189,7 @@
             </svg>
             <div class="ml-3">
               <p class="text-sm text-indigo-700 dark:text-indigo-300">
-                SSH Agent authentication will use your local SSH agent for authentication. 
-                No password or key needs to be stored.
+                {{ $t('message.ssh_agent_info') }}
               </p>
             </div>
           </div>
@@ -215,7 +214,7 @@
           @click="$emit('close')"
           class="btn-outline"
         >
-          Cancel
+          {{ $t('message.cancel') }}
         </button>
         <button
           @click="handleSubmit"
@@ -223,7 +222,7 @@
           class="btn-primary"
         >
           <span v-if="loading" class="spinner mr-2"></span>
-          {{ isEditing ? 'Update' : 'Create' }} Session
+          {{ isEditing ? $t('message.update_session') : $t('message.create_session') }}
         </button>
       </div>
     </div>
@@ -234,6 +233,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useSessionStore } from '@/stores/sessionStore'
 import { useCredentialStore } from '@/stores/credentialStore'
+import { useI18n } from 'vue-i18n'
 
 // Props
 const props = defineProps({
@@ -249,6 +249,7 @@ const emit = defineEmits(['close', 'saved'])
 // Store
 const sessionStore = useSessionStore()
 const credentialStore = useCredentialStore()
+const { t } = useI18n()
 
 // State
 const form = ref({
@@ -276,31 +277,31 @@ const validateForm = () => {
   errors.value = {}
   
   if (!form.value.name.trim()) {
-    errors.value.name = 'Session name is required'
+    errors.value.name = t('message.session_name_required')
   }
   
   if (!form.value.hostname.trim()) {
-    errors.value.hostname = 'Hostname is required'
+    errors.value.hostname = t('message.hostname_required')
   }
   
   if (!form.value.username.trim()) {
-    errors.value.username = 'Username is required'
+    errors.value.username = t('message.username_required_form')
   }
   
   if (form.value.port && (isNaN(form.value.port) || form.value.port < 1 || form.value.port > 65535)) {
-    errors.value.port = 'Port must be between 1 and 65535'
+    errors.value.port = t('message.port_range_error')
   }
   
   if (authMethod.value === 'password' && !form.value.password) {
-    errors.value.password = 'Password is required'
+    errors.value.password = t('message.password_required_form')
   }
   
   if (authMethod.value === 'key' && !form.value.privateKey.trim()) {
-    errors.value.privateKey = 'Private key is required'
+    errors.value.privateKey = t('message.private_key_required_form')
   }
 
   if (authMethod.value === 'credential' && !selectedCredentialId.value) {
-    errors.value.credentialId = 'Please select a saved credential'
+    errors.value.credentialId = t('message.select_credential_required')
   }
   
   return Object.keys(errors.value).length === 0
@@ -344,10 +345,10 @@ const handleSubmit = async () => {
     if (result.success) {
       emit('saved', result.session)
     } else {
-      globalError.value = result.error || 'Failed to save session'
+      globalError.value = result.error || t('message.failed_to_save_session')
     }
   } catch (error) {
-    globalError.value = error.message || 'An unexpected error occurred'
+    globalError.value = error.message || t('message.unexpected_error_session_form')
   } finally {
     loading.value = false
   }

@@ -3,13 +3,13 @@
     <div class="max-w-md w-full space-y-8 bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg">
       <div>
         <h2 class="mt-6 text-center text-3xl font-extrabold text-slate-900 dark:text-white">
-          Reset your password
+          {{ $t('message.reset_password_title') }}
         </h2>
         <p v-if="verifying" class="mt-2 text-center text-sm text-slate-600 dark:text-slate-400">
-          Verifying your reset link...
+          {{ $t('message.verifying_reset_link') }}
         </p>
         <p v-else-if="!invalidToken && !resetComplete" class="mt-2 text-center text-sm text-slate-600 dark:text-slate-400">
-          Hi {{ username }}! Create a new password for your account.
+          {{ $t('message.hi_create_new_password', { username: username }) }}
         </p>
       </div>
       
@@ -31,17 +31,17 @@
           </div>
           <div class="ml-3">
             <h3 class="text-sm font-medium text-red-800 dark:text-red-200">
-              Invalid or expired reset link
+              {{ $t('message.invalid_expired_link') }}
             </h3>
             <p class="mt-2 text-sm text-red-700 dark:text-red-300">
-              This password reset link is invalid or has expired. Please request a new password reset link.
+              {{ $t('message.invalid_expired_link_description') }}
             </p>
             <div class="mt-4">
               <router-link 
                 to="/forgot-password" 
                 class="text-sm font-medium text-red-800 dark:text-red-200 hover:underline"
               >
-                Request a new password reset
+                {{ $t('message.request_new_password_reset') }}
               </router-link>
             </div>
           </div>
@@ -58,17 +58,17 @@
           </div>
           <div class="ml-3">
             <h3 class="text-sm font-medium text-green-800 dark:text-green-200">
-              Password reset successful!
+              {{ $t('message.password_reset_successful') }}
             </h3>
             <p class="mt-2 text-sm text-green-700 dark:text-green-300">
-              Your password has been reset successfully. You can now log in with your new password.
+              {{ $t('message.password_reset_successful_description') }}
             </p>
             <div class="mt-4">
               <router-link 
                 to="/login" 
                 class="text-sm font-medium text-green-800 dark:text-green-200 hover:underline"
               >
-                Go to login page
+                {{ $t('message.go_to_login_page') }}
               </router-link>
             </div>
           </div>
@@ -96,7 +96,7 @@
         <div class="rounded-md shadow-sm -space-y-px">
           <div class="mb-4">
             <label for="new-password" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              New Password
+              {{ $t('message.new_password_label') }}
             </label>
             <input
               id="new-password"
@@ -106,13 +106,13 @@
               autocomplete="new-password"
               required
               class="appearance-none relative block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 placeholder-slate-500 text-slate-900 dark:text-white dark:bg-slate-700 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Enter new password"
+              :placeholder="$t('message.enter_new_password_placeholder')"
             />
           </div>
           
           <div>
             <label for="confirm-password" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Confirm Password
+              {{ $t('message.confirm_password_label') }}
             </label>
             <input
               id="confirm-password"
@@ -122,7 +122,7 @@
               autocomplete="new-password"
               required
               class="appearance-none relative block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 placeholder-slate-500 text-slate-900 dark:text-white dark:bg-slate-700 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Confirm new password"
+              :placeholder="$t('message.confirm_new_password_placeholder_reset')"
             />
           </div>
         </div>
@@ -144,7 +144,7 @@
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             </span>
-            <span>{{ loading ? 'Resetting Password...' : 'Reset Password' }}</span>
+            <span>{{ loading ? $t('message.resetting_password') : $t('message.reset_password_button') }}</span>
           </button>
         </div>
       </form>
@@ -156,10 +156,12 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 
 const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 
 // States
 const token = ref(route.params.token || '');
@@ -177,12 +179,12 @@ const passwordError = ref('');
 const canSubmit = computed(() => {
   // Can only submit if passwords match and are at least 6 characters long
   if (newPassword.value !== confirmPassword.value) {
-    passwordError.value = 'Passwords do not match';
+    passwordError.value = t('message.passwords_do_not_match');
     return false;
   }
   
   if (newPassword.value.length < 6) {
-    passwordError.value = 'Password must be at least 6 characters long';
+    passwordError.value = t('message.password_min_length');
     return false;
   }
   
@@ -208,7 +210,7 @@ const verifyToken = async () => {
   } catch (error) {
     console.error('Error verifying token:', error);
     invalidToken.value = true;
-    errorMessage.value = 'Failed to verify reset token';
+    errorMessage.value = t('message.failed_to_verify_reset_token');
   } finally {
     verifying.value = false;
   }
@@ -230,7 +232,7 @@ const handleSubmit = async () => {
     }
   } catch (error) {
     console.error('Error resetting password:', error);
-    errorMessage.value = 'An unexpected error occurred. Please try again.';
+    errorMessage.value = t('message.unexpected_error');
   } finally {
     loading.value = false;
   }

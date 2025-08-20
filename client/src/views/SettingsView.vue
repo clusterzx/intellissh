@@ -3,13 +3,13 @@
     <div class="mb-8">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Settings</h1>
+          <h1 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">{{ $t('message.settings') }}</h1>
           <p class="text-slate-600 dark:text-slate-400">
-            Configure application settings. Changes will be applied immediately.
+            {{ $t('message.configure_app_settings') }}
           </p>
         </div>
         <div v-if="isAdmin" class="px-3 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300 rounded-lg text-sm font-medium">
-          Admin
+          {{ $t('message.admin') }}
         </div>
       </div>
       
@@ -20,65 +20,66 @@
           class="text-sm px-3 py-1 rounded border border-slate-300 dark:border-slate-500 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
           :class="{'bg-slate-100 dark:bg-slate-700': !userSettings}"
         >
-          {{ userSettings ? 'Switch to Global Settings' : 'Switch to User Settings' }}
+          {{ userSettings ? $t('message.switch_to_global_settings') : $t('message.switch_to_user_settings') }}
         </button>
         <button
           @click="reloadSettings"
           class="text-sm px-3 py-1 rounded border border-indigo-300 dark:border-indigo-600 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
         >
-          Reload Settings
+          {{ $t('message.reload_settings') }}
         </button>
         <button
           @click="resetSettings"
           class="text-sm px-3 py-1 rounded border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
         >
-          Reset {{ userSettings ? 'My' : 'All' }} Settings
+          Reset {{ userSettings ? $t('message.reset_my_settings') : $t('message.reset_all_settings') }}
         </button>
       </div>
     </div>
 
     <div v-if="settingsStore.loading" class="my-8 flex justify-center">
       <div class="spinner"></div>
+      <p class="text-slate-600 dark:text-slate-300 ml-2">{{ $t('message.loading') }}</p>
     </div>
 
     <div v-else-if="settingsStore.error" class="my-8 p-4 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-lg">
       <p class="font-medium">{{ settingsStore.error }}</p>
       <button @click="loadSettings" class="mt-2 btn-secondary py-1 px-3 text-sm">
-        Retry
+        {{ $t('message.retry') }}
       </button>
     </div>
 
     <div v-else-if="settingsStore.settings.length === 0" class="my-8 p-4 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 rounded-lg">
-      <p>No settings found. Click the button below to reset to defaults.</p>
+      <p>{{ $t('message.no_settings_found') }}</p>
       <div class="mt-2 flex flex-wrap gap-2">
         <button 
           @click.prevent="resetSettings" 
           class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg font-medium focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
         >
-          Reset to Defaults
+          {{ $t('message.reset_to_defaults') }}
         </button>
         <button 
           @click.prevent="directReset" 
           class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
         >
-          Direct Reset
+          {{ $t('message.direct_reset') }}
         </button>
         <button 
           @click.prevent="publicReset" 
           class="bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded-lg font-medium focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors"
         >
-          Public Reset
+          {{ $t('message.public_reset') }}
         </button>
         <button 
           @click.prevent="testApi" 
           class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
         >
-          Test API
+          {{ $t('message.test_api') }}
         </button>
       </div>
       
       <div v-if="apiResponse" class="mt-4 p-3 bg-white dark:bg-slate-700 rounded-lg border border-slate-300 dark:border-slate-600">
-        <h3 class="font-medium mb-1 text-slate-900 dark:text-white">API Response:</h3>
+        <h3 class="font-medium mb-1 text-slate-900 dark:text-white">{{ $t('message.api_response') }}</h3>
         <pre class="text-xs overflow-auto p-2 bg-slate-100 dark:bg-slate-800 rounded max-h-40">{{ JSON.stringify(apiResponse, null, 2) }}</pre>
       </div>
     </div>
@@ -170,9 +171,9 @@
                 v-model="formValues[setting.id]"
                 class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white"
               >
-                <option value="openai">OpenAI</option>
-                <option value="ollama">Ollama</option>
-                <option value="custom">Custom API (OpenAI compatible)</option>
+                <option value="openai">{{ $t('message.openai') }}</option>
+                <option value="ollama">{{ $t('message.ollama') }}</option>
+                <option value="custom">{{ $t('message.custom_api_compatible') }}</option>
               </select>
             </div>
             
@@ -193,7 +194,7 @@
                 ></div>
               </div>
               <label :for="setting.id" class="inline-block ml-2">
-                {{ formValues[setting.id] === 'true' ? 'Enabled' : 'Disabled' }}
+                {{ formValues[setting.id] === 'true' ? $t('message.enabled') : $t('message.disabled') }}
               </label>
             </div>
 
@@ -204,15 +205,15 @@
                 v-model="formValues[setting.id]"
                 class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white"
               >
-                <option value="gpt-4o-mini">GPT-4o Mini</option>
-                <option value="gpt-4o">GPT-4o</option>
-                <option value="gpt-4.1">GPT-4.1</option>
-                <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
-                <option value="gpt-4.1-nano">GPT-4.1 Nano</option>
-                <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                <option value="gpt-4">GPT-4</option>
-                <option value="gpt-4-32k">GPT-4 32k</option>
-                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                <option value="gpt-4o-mini">{{ $t('message.gpt_4o_mini') }}</option>
+                <option value="gpt-4o">{{ $t('message.gpt_4o') }}</option>
+                <option value="gpt-4.1">{{ $t('message.gpt_4_1') }}</option>
+                <option value="gpt-4.1-mini">{{ $t('message.gpt_4_1_mini') }}</option>
+                <option value="gpt-4.1-nano">{{ $t('message.gpt_4_1_nano') }}</option>
+                <option value="gpt-4-turbo">{{ $t('message.gpt_4_turbo') }}</option>
+                <option value="gpt-4">{{ $t('message.gpt_4') }}</option>
+                <option value="gpt-4-32k">{{ $t('message.gpt_4_32k') }}</option>
+                <option value="gpt-3.5-turbo">{{ $t('message.gpt_3_5_turbo') }}</option>
               </select>
             </div>
 
@@ -223,10 +224,10 @@
                 v-model="formValues[setting.id]"
                 type="text"
                 class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white"
-                placeholder="Enter model name (e.g., llama2, mistral, gemma)"
+                :placeholder="$t('message.enter_model_name_ollama')"
               />
               <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Enter any model name available in your Ollama installation
+                {{ $t('message.ollama_installation_note') }}
               </p>
             </div>
             
@@ -237,11 +238,11 @@
                 v-model="formValues[setting.id]"
                 type="text"
                 class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white"
-                placeholder="https://your-api-endpoint.com/v1"
+                :placeholder="$t('message.custom_api_url_placeholder')"
                 :disabled="formValues['llm_provider'] !== 'custom'"
               />
               <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Enter the base URL for your OpenAI-compatible API (including /v1 if needed)
+                {{ $t('message.custom_api_url_note') }}
               </p>
             </div>
             
@@ -253,7 +254,7 @@
                   v-model="formValues[setting.id]"
                   :type="showSensitive[setting.id] ? 'text' : 'password'"
                   class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white"
-                  placeholder="Enter your API key"
+                  :placeholder="$t('message.enter_api_key')"
                   :disabled="formValues['llm_provider'] !== 'custom'"
                 />
                 <button
@@ -294,7 +295,7 @@
                 </button>
               </div>
               <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Enter the API key for your custom OpenAI-compatible service
+                {{ $t('message.custom_api_key_note') }}
               </p>
             </div>
             
@@ -305,11 +306,11 @@
                 v-model="formValues[setting.id]"
                 type="text"
                 class="w-full p-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-slate-700 dark:text-white"
-                placeholder="Enter model name (e.g., claude-3-opus, gemini-pro)"
+                :placeholder="$t('message.enter_model_name_custom')"
                 :disabled="formValues['llm_provider'] !== 'custom'"
               />
               <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Enter the model name supported by your custom API service
+                {{ $t('message.custom_model_note') }}
               </p>
             </div>
           </div>
@@ -320,8 +321,8 @@
               class="btn-primary px-4 py-2"
               :disabled="!hasChanges || isSaving"
             >
-              <span v-if="isSaving">Saving...</span>
-              <span v-else>Save Changes</span>
+              <span v-if="isSaving">{{ $t('message.saving') }}</span>
+              <span v-else>{{ $t('message.save_changes') }}</span>
             </button>
             <button
               type="button"
@@ -329,7 +330,7 @@
               class="btn-secondary px-4 py-2"
               :disabled="!hasChanges || isSaving"
             >
-              Reset Form
+              {{ $t('message.reset_form') }}
             </button>
             <button
               type="button"
@@ -337,7 +338,7 @@
               class="btn-ghost px-4 py-2"
               :disabled="isSaving"
             >
-              Reset to Defaults
+              {{ $t('message.reset_to_defaults_button') }}
             </button>
           </div>
         </form>
@@ -345,21 +346,21 @@
 
       <!-- Two-Factor Authentication Section -->
       <div v-else-if="activeCategory === 'two_factor_auth'" class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 mb-6">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Two-Factor Authentication (2FA)</h2>
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">{{ $t('message.two_factor_authentication') }}</h2>
         
         <div class="mb-4">
           <p class="text-slate-700 dark:text-slate-300">
-            Status: 
+            {{ $t('message.status') }} 
             <span :class="authStore.currentUser?.is2faEnabled ? 'text-green-600' : 'text-red-600'">
-              {{ authStore.currentUser?.is2faEnabled ? 'Enabled' : 'Disabled' }}
+              {{ authStore.currentUser?.is2faEnabled ? $t('message.enabled') : $t('message.disabled') }}
             </span>
           </p>
         </div>
 
         <div v-if="!authStore.currentUser?.is2faEnabled">
-          <h3 class="text-lg font-medium text-slate-900 dark:text-white mb-3">Enable 2FA</h3>
+          <h3 class="text-lg font-medium text-slate-900 dark:text-white mb-3">{{ $t('message.enable_2fa') }}</h3>
           <p class="text-slate-600 dark:text-slate-400 mb-4">
-            To enable Two-Factor Authentication, scan the QR code with your authenticator app (e.g., Google Authenticator, Authy) and enter the 6-digit code.
+            {{ $t('message.enable_2fa_description') }}
           </p>
 
           <div class="flex flex-col items-center mb-6">
@@ -369,23 +370,23 @@
               class="btn-primary px-4 py-2 mb-4"
             >
               <span v-if="authStore.loading" class="spinner mr-2"></span>
-              Generate New Secret
+              {{ $t('message.generate_new_secret') }}
             </button>
 
             <div v-if="authStore.getOtpauthUrl" class="border p-4 rounded-lg bg-slate-50 dark:bg-slate-700">
-              <p class="text-center text-sm text-slate-600 dark:text-slate-400 mb-2">Scan this QR code:</p>
+              <p class="text-center text-sm text-slate-600 dark:text-slate-400 mb-2">{{ $t('message.scan_qr_code') }}</p>
               <qrcode-vue :value="authStore.getOtpauthUrl" :size="200" level="H" class="mx-auto mb-4"></qrcode-vue>
               <p class="text-center text-sm font-mono text-slate-800 dark:text-slate-200 break-all">{{ authStore.getTotpSecret }}</p>
             </div>
           </div>
 
           <div class="mb-4">
-            <label for="totpCodeEnable" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">6-Digit Code</label>
+            <label for="totpCodeEnable" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ $t('message.6_digit_code') }}</label>
             <input
               id="totpCodeEnable"
               v-model="totpCodeInput"
               type="text"
-              placeholder="Enter 6-digit code"
+              :placeholder="$t('message.enter_6_digit_code')"
               class="form-input w-full"
             />
           </div>
@@ -396,23 +397,23 @@
             class="btn-primary px-4 py-2"
           >
             <span v-if="authStore.loading" class="spinner mr-2"></span>
-            Enable 2FA
+            {{ $t('message.enable_2fa') }}
           </button>
         </div>
 
         <div v-else>
-          <h3 class="text-lg font-medium text-slate-900 dark:text-white mb-3">Disable 2FA</h3>
+          <h3 class="text-lg font-medium text-slate-900 dark:text-white mb-3">{{ $t('message.disable_2fa') }}</h3>
           <p class="text-slate-600 dark:text-slate-400 mb-4">
-            To disable Two-Factor Authentication, enter your current 6-digit code.
+            {{ $t('message.disable_2fa_description') }}
           </p>
 
           <div class="mb-4">
-            <label for="totpCodeDisable" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">6-Digit Code</label>
+            <label for="totpCodeDisable" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ $t('message.6_digit_code') }}</label>
             <input
               id="totpCodeDisable"
               v-model="totpCodeInput"
               type="text"
-              placeholder="Enter 6-digit code"
+              :placeholder="$t('message.enter_6_digit_code')"
               class="form-input w-full"
             />
           </div>
@@ -423,7 +424,7 @@
             class="btn-danger px-4 py-2"
           >
             <span v-if="authStore.loading" class="spinner mr-2"></span>
-            Disable 2FA
+            {{ $t('message.disable_2fa') }}
           </button>
         </div>
       </div>
@@ -437,6 +438,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import QrcodeVue from 'qrcode.vue';
+import { useI18n } from 'vue-i18n';
 
 const settingsStore = useSettingsStore();
 const authStore = useAuthStore();
@@ -449,6 +451,7 @@ const userSettings = ref(false);
 const totpCodeInput = ref('');
 const showQrCode = ref(false);
 const isAdmin = computed(() => authStore.user?.role === 'admin');
+const { t } = useI18n();
 
 // Computed property to filter visible categories based on user role and settings mode
 const visibleCategories = computed(() => {
@@ -487,15 +490,15 @@ const hasChanges = computed(() => {
 const getCategoryLabel = (category) => {
   switch (category) {
     case 'llm':
-      return 'LLM Settings';
+      return t('message.llm_settings');
     case 'security':
-      return 'Security';
+      return t('message.security');
     case 'server':
-      return 'Server';
+      return t('message.server');
     case 'email':
-      return 'Email Settings';
+      return t('message.email_settings');
     case 'two_factor_auth':
-      return 'Two-Factor Authentication';
+      return t('message.two_factor_authentication');
     default:
       return category.charAt(0).toUpperCase() + category.slice(1);
   }
@@ -504,9 +507,9 @@ const getCategoryLabel = (category) => {
 // Method to get placeholder text
 const getPlaceholder = (setting) => {
   if (setting.is_sensitive) {
-    return setting.value ? '••••••••' : 'Enter value...';
+    return setting.value ? '••••••••' : t('message.enter_value');
   }
-  return 'Enter value...';
+  return t('message.enter_value');
 };
 
 // Method to check if a setting has a special input type
@@ -525,7 +528,7 @@ const loadSettings = async () => {
     await settingsStore.fetchSettings(userSettings.value);
     initializeForm();
   } catch (error) {
-    console.error('Failed to load settings:', error);
+    console.error(t('message.failed_to_load_settings'), error);
   }
 };
 
@@ -574,19 +577,19 @@ const saveSettings = async () => {
       ];
       
       settingsToUpdate = settingsToUpdate.filter(setting => !adminOnlySettings.includes(setting.id));
-      console.log('Filtered settings to update (non-admin):', settingsToUpdate);
+      console.log(t('message.filtered_settings_update_non_admin'), settingsToUpdate);
     } else {
-      console.log('All settings to update (admin):', settingsToUpdate);
+      console.log(t('message.all_settings_update_admin'), settingsToUpdate);
     }
     
     if (settingsToUpdate.length > 0) {
       const result = await settingsStore.updateSettings(settingsToUpdate, userSettings.value);
-      console.log('Settings update result:', result);
+      console.log(t('message.settings_update_result'), result);
       
       // Update original values after successful save
       settingsToUpdate.forEach(setting => {
         originalValues.value[setting.id] = formValues.value[setting.id];
-        console.log(`Updated original value for ${setting.id} to ${originalValues.value[setting.id]}`);
+        console.log(t('message.updated_original_value', { settingId: setting.id, originalValue: originalValues.value[setting.id] }));
       });
       
       // Verify admin settings if applicable
@@ -594,18 +597,18 @@ const saveSettings = async () => {
         // Explicitly verify registration setting value if it was in the updated settings
         const regSetting = settingsToUpdate.find(s => s.id === 'registration_enabled');
         if (regSetting) {
-          console.log(`Registration setting saved as: ${regSetting.value}`);
+          console.log(t('message.registration_setting_saved', { regValue: regSetting.value }));
           
           // Verify the setting was saved correctly by fetching it again
           await settingsStore.fetchSettingsByCategory('server', userSettings.value);
           const updatedRegValue = settingsStore.getSettingValue('registration_enabled');
-          console.log(`Registration setting value after refresh: ${updatedRegValue}`);
+          console.log(t('message.registration_setting_value_after_refresh', { updatedRegValue: updatedRegValue }));
         }
       }
     }
   } catch (error) {
     console.error('Failed to save settings:', error);
-    alert('Error saving settings: ' + (error.message || 'Unknown error'));
+    alert(t('message.error_saving_settings') + (error.message || 'Unknown error'));
   } finally {
     isSaving.value = false;
   }
@@ -620,10 +623,10 @@ const resetForm = () => {
 
 // Method to reset settings to defaults using the store
 const resetSettings = async () => {
-  console.log('Reset to defaults clicked');
+  console.log(t('message.reset_to_defaults_clicked'));
   const message = userSettings.value 
-    ? 'Are you sure you want to reset your personal settings? Global settings will still apply.' 
-    : 'Are you sure you want to reset all global settings to default values? This cannot be undone.';
+    ? t('message.confirm_reset_personal_settings') 
+    : t('message.confirm_reset_global_settings');
   
   const confirmed = confirm(message);
   if (!confirmed) return;
@@ -631,13 +634,13 @@ const resetSettings = async () => {
   isSaving.value = true;
   
   try {
-    console.log(`Calling resetSettings API through store (userSettings: ${userSettings.value})`);
+    console.log(t('message.calling_reset_settings_api', { userSettings: userSettings.value }));
     await settingsStore.resetSettings(userSettings.value);
-    console.log('Settings reset successful');
+    console.log(t('message.settings_reset_successful'));
     initializeForm();
   } catch (error) {
     console.error('Failed to reset settings:', error);
-    alert('Failed to reset settings: ' + (error.message || 'Unknown error'));
+    alert(t('message.failed_to_reset_settings') + (error.message || 'Unknown error'));
   } finally {
     isSaving.value = false;
   }
@@ -647,13 +650,13 @@ const resetSettings = async () => {
 const reloadSettings = async () => {
   isSaving.value = true;
   try {
-    console.log('Reloading all settings from server...');
+    console.log(t('message.reloading_all_settings'));
     settingsStore.initialized = false;
     await loadSettings();
-    alert('Settings reloaded successfully!');
+    alert(t('message.settings_reloaded_successfully'));
   } catch (error) {
     console.error('Failed to reload settings:', error);
-    alert('Error reloading settings: ' + (error.message || 'Unknown error'));
+    alert(t('message.error_reloading_settings') + (error.message || 'Unknown error'));
   } finally {
     isSaving.value = false;
   }
@@ -673,18 +676,18 @@ const toggleSettingsScope = async () => {
 const toggleRegistration = async () => {
   // Verify user is admin and in global settings mode
   if (!isAdmin.value || userSettings.value) {
-    console.error('Only admin users can modify registration setting in global mode');
-    alert('Permission denied: Only administrators can change this setting.');
+    console.error(t('message.admin_only_registration'));
+    alert(t('message.permission_denied_admin'));
     return;
   }
   
   // Get the current value
   const currentValue = formValues.value['registration_enabled'];
-  console.log('Current registration enabled value:', currentValue);
+  console.log(t('message.current_registration_enabled_value', { currentValue: currentValue }));
   
   // Set the opposite value
   const newValue = currentValue === 'true' ? 'false' : 'true';
-  console.log('New registration enabled value:', newValue);
+  console.log(t('message.new_registration_enabled_value', { newValue: newValue }));
   
   // Update immediately in the UI
   formValues.value['registration_enabled'] = newValue;
@@ -693,7 +696,7 @@ const toggleRegistration = async () => {
   // Save directly to the database using a single setting update
   isSaving.value = true;
   try {
-    console.log(`Saving registration_enabled=${newValue} directly to database`);
+    console.log(t('message.saving_registration_enabled', { newValue: newValue }));
     
     // Use updateSetting from the store to update just this one setting
     await axios.put('/api/settings/registration_enabled', { 
@@ -706,14 +709,14 @@ const toggleRegistration = async () => {
     const regSetting = updatedSettings.find(s => s.id === 'registration_enabled');
     
     if (regSetting) {
-      console.log(`Registration setting value after direct save: ${regSetting.value}`);
+      console.log(t('message.registration_setting_value_after_direct_save', { regValue: regSetting.value }));
       // Update the form value to match what's in the database
       formValues.value['registration_enabled'] = regSetting.value;
       originalValues.value['registration_enabled'] = regSetting.value;
     }
   } catch (error) {
     console.error('Failed to directly update registration setting:', error);
-    alert('Error toggling registration: ' + (error.message || 'Unknown error'));
+    alert(t('message.error_toggling_registration') + (error.message || 'Unknown error'));
     
     // Revert to original value on error
     formValues.value['registration_enabled'] = currentValue;
@@ -728,50 +731,50 @@ const generate2faSecret = async () => {
     await authStore.generate2faSecret();
     showQrCode.value = true;
   } catch (error) {
-    console.error('Failed to generate 2FA secret:', error);
-    alert('Error generating 2FA secret: ' + (error.message || 'Unknown error'));
+    console.error(t('message.failed_to_generate_2fa_secret'), error);
+    alert(t('message.error_generating_2fa_secret') + (error.message || 'Unknown error'));
   }
 };
 
 const enable2fa = async () => {
   if (!totpCodeInput.value) {
-    alert('Please enter the 6-digit code.');
+    alert(t('message.please_enter_6_digit_code'));
     return;
   }
   if (!authStore.getTotpSecret) {
-    alert('Please generate a secret first.');
+    alert(t('message.please_generate_secret_first'));
     return;
   }
   try {
     const result = await authStore.enable2fa(totpCodeInput.value, authStore.getTotpSecret);
     if (result.success) {
-      alert('2FA enabled successfully!');
+      alert(t('message.2fa_enabled_successfully'));
       reset2faForm();
     } else {
-      alert('Failed to enable 2FA: ' + (result.error || 'Unknown error'));
+      alert(t('message.failed_to_enable_2fa') + (result.error || 'Unknown error'));
     }
   } catch (error) {
     console.error('Failed to enable 2FA:', error);
-    alert('Error enabling 2FA: ' + (error.message || 'Unknown error'));
+    alert(t('message.failed_to_enable_2fa') + (error.message || 'Unknown error'));
   }
 };
 
 const disable2fa = async () => {
   if (!totpCodeInput.value) {
-    alert('Please enter the 6-digit code.');
+    alert(t('message.please_enter_6_digit_code'));
     return;
   }
   try {
     const result = await authStore.disable2fa(totpCodeInput.value);
     if (result.success) {
-      alert('2FA disabled successfully!');
+      alert(t('message.2fa_disabled_successfully'));
       reset2faForm();
     } else {
-      alert('Failed to disable 2FA: ' + (result.error || 'Unknown error'));
+      alert(t('message.failed_to_disable_2fa') + (result.error || 'Unknown error'));
     }
   } catch (error) {
     console.error('Failed to disable 2FA:', error);
-    alert('Error disabling 2FA: ' + (error.message || 'Unknown error'));
+    alert(t('message.failed_to_disable_2fa') + (error.message || 'Unknown error'));
   }
 };
 
@@ -784,24 +787,24 @@ const reset2faForm = () => {
 
 // Direct reset bypassing the store - for troubleshooting
 const directReset = async () => {
-  console.log('Direct reset clicked');
-  const confirmed = confirm('This will bypass the store and call the API directly. Continue?');
+  console.log(t('message.direct_reset_clicked'));
+  const confirmed = confirm(t('message.confirm_direct_reset'));
   if (!confirmed) return;
   
   isSaving.value = true;
   
   try {
-    console.log('Calling reset API directly');
+    console.log(t('message.calling_reset_api_directly'));
     const response = await axios.post('/api/settings/reset');
-    console.log('Direct API response:', response.data);
-    alert('Direct reset successful: ' + JSON.stringify(response.data));
+    console.log(t('message.direct_api_response'), response.data);
+    alert(t('message.direct_reset_successful') + JSON.stringify(response.data));
     
     // Reload settings after reset
     await settingsStore.fetchSettings();
     initializeForm();
   } catch (error) {
     console.error('Direct reset failed:', error);
-    alert('Direct reset failed: ' + (error.response?.data?.error || error.message || 'Unknown error'));
+    alert(t('message.direct_reset_failed') + (error.response?.data?.error || error.message || 'Unknown error'));
   } finally {
     isSaving.value = false;
   }
@@ -811,16 +814,16 @@ const directReset = async () => {
 const apiResponse = ref(null);
 
 const publicReset = async () => {
-  console.log('Public reset clicked');
-  const confirmed = confirm('This will call the public reset API endpoint. Continue?');
+  console.log(t('message.public_reset_clicked'));
+  const confirmed = confirm(t('message.confirm_public_reset'));
   if (!confirmed) return;
   
   isSaving.value = true;
   
   try {
-    console.log('Calling public reset API');
+    console.log(t('message.calling_public_reset_api'));
     const response = await axios.post('/api/settings/public-reset');
-    console.log('Public reset response:', response.data);
+    console.log(t('message.public_reset_response'), response.data);
     apiResponse.value = response.data;
     
     // Reload settings after reset
@@ -839,11 +842,11 @@ const publicReset = async () => {
 
 // Test API connectivity
 const testApi = async () => {
-  console.log('Testing API connection');
+  console.log(t('message.testing_api_connection'));
   
   try {
     const response = await axios.get('/api/settings/test');
-    console.log('API test response:', response.data);
+    console.log(t('message.api_test_response'), response.data);
     apiResponse.value = response.data;
   } catch (error) {
     console.error('API test failed:', error);
@@ -864,7 +867,7 @@ watch(activeCategory, async (newCategory) => {
       await settingsStore.fetchSettingsByCategory(newCategory, userSettings.value);
       initializeForm();
     } catch (error) {
-      console.error(`Failed to load ${newCategory} settings:`, error);
+      console.error(t('message.failed_to_load_category_settings', { category: newCategory }), error);
     }
   }
 });

@@ -7,14 +7,14 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
-          <h3 class="text-lg font-medium text-slate-900 dark:text-slate-100">Terminal Assistant</h3>
+          <h3 class="text-lg font-medium text-slate-900 dark:text-slate-100">{{ $t('message.terminal_assistant') }}</h3>
           <!-- Loading spinner -->
           <div v-if="isProcessing" class="flex items-center text-indigo-600 dark:text-indigo-400">
             <svg class="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span class="text-xs">Processing...</span>
+            <span class="text-xs">{{ $t('message.processing') }}</span>
           </div>
         </div>
         <div class="toggle-switch flex items-center">
@@ -22,7 +22,7 @@
             <input type="checkbox" v-model="helperEnabled" @change="toggleHelper" :disabled="!isReady" />
             <span class="slider round" :class="{'bg-indigo-500 dark:bg-indigo-600': helperEnabled, 'bg-slate-300 dark:bg-slate-600': !helperEnabled || !isReady}"></span>
           </label>
-          <span class="ml-2 text-sm text-slate-600 dark:text-slate-400">{{ helperEnabled ? 'Enabled' : 'Disabled' }}</span>
+          <span class="ml-2 text-sm text-slate-600 dark:text-slate-400">{{ helperEnabled ? $t('message.enabled') : $t('message.disabled') }}</span>
         </div>
       </div>
     </div>
@@ -36,20 +36,20 @@
           </svg>
         </div>
         <div class="ml-3 flex-1">
-          <p class="text-sm font-medium text-amber-800 dark:text-amber-300">Suggested Command:</p>
+          <p class="text-sm font-medium text-amber-800 dark:text-amber-300">{{ $t('message.suggested_command') }}</p>
           <div class="mt-2 mb-3 bg-slate-800 dark:bg-slate-900 text-slate-100 dark:text-slate-200 rounded-lg overflow-hidden shadow-inner">
             <div class="p-3 text-xs font-mono overflow-auto max-h-40 custom-scrollbar">{{ pendingCommand.command }}</div>
           </div>
           <p class="text-sm text-slate-600 dark:text-slate-400 mb-3">{{ pendingCommand.reasoning }}</p>
           <div class="flex justify-end space-x-3">
             <button @click="rejectCommand" class="btn-ghost px-3 py-1.5 text-sm">
-              Reject
+              {{ $t('message.reject') }}
             </button>
             <button @click="approveCommand" class="btn-primary px-3 py-1.5 text-sm flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
               </svg>
-              Execute
+              {{ $t('message.execute') }}
             </button>
           </div>
         </div>
@@ -66,7 +66,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
-          Analyze Terminal Output
+          {{ $t('message.analyze_terminal_output') }}
         </button>
       </div>
       
@@ -84,7 +84,7 @@
           <!-- Command executed -->
           <div v-if="item.type === 'command' || item.type === 'executed'" 
                class="ml-auto max-w-[85%] bg-indigo-500/10 dark:bg-indigo-500/20 rounded-2xl rounded-tr-sm p-3 border border-indigo-200 dark:border-indigo-800/50 shadow-sm">
-            <div class="font-medium text-indigo-800 dark:text-indigo-300 text-sm mb-1">Command Executed</div>
+            <div class="font-medium text-indigo-800 dark:text-indigo-300 text-sm mb-1">{{ $t('message.command_executed') }}</div>
             <code class="block text-xs bg-indigo-100 dark:bg-indigo-900/50 p-2 rounded whitespace-pre-wrap break-all overflow-hidden text-slate-800 dark:text-slate-200">{{ item.content.command }}</code>
             <div class="mt-2 text-xs text-slate-600 dark:text-slate-400">{{ item.content.reasoning }}</div>
           </div>
@@ -92,15 +92,15 @@
           <!-- Command suggestion -->
           <div v-else-if="item.type === 'suggestion'"
                class="ml-auto max-w-[85%] bg-amber-500/10 dark:bg-amber-500/20 rounded-2xl rounded-tr-sm p-3 border border-amber-200 dark:border-amber-800/50 shadow-sm">
-            <div class="font-medium text-amber-800 dark:text-amber-300 text-sm mb-1">Suggestion</div>
+            <div class="font-medium text-amber-800 dark:text-amber-300 text-sm mb-1">{{ $t('message.suggestion') }}</div>
             <code class="block text-xs bg-amber-100 dark:bg-amber-900/50 p-2 rounded whitespace-pre-wrap break-all overflow-hidden text-slate-800 dark:text-slate-200">{{ item.content.command }}</code>
             <div class="mt-2 text-xs text-slate-600 dark:text-slate-400">{{ item.content.reasoning }}</div>
             <div class="flex justify-end mt-2 space-x-2">
               <button @click="rejectHistoryCommand(item)" class="px-2 py-1 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
-                Dismiss
+                {{ $t('message.dismiss') }}
               </button>
               <button @click="approveHistoryCommand(item)" class="px-2 py-1 bg-amber-500/80 text-white text-xs rounded hover:bg-amber-600 transition-colors">
-                Execute
+                {{ $t('message.execute') }}
               </button>
             </div>
           </div>
@@ -108,7 +108,7 @@
           <!-- Rejected command -->
           <div v-else-if="item.type === 'rejected'"
                class="mr-auto max-w-[85%] bg-slate-100 dark:bg-slate-700/50 rounded-2xl rounded-tl-sm p-3 border border-slate-200 dark:border-slate-700 shadow-sm">
-            <div class="font-medium text-red-700 dark:text-red-400 text-sm">Command rejected</div>
+            <div class="font-medium text-red-700 dark:text-red-400 text-sm">{{ $t('message.command_rejected') }}</div>
           </div>
           
           <!-- Normal assistant response -->
@@ -124,7 +124,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-3 text-slate-400 dark:text-slate-500 opacity-75" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
-          <p class="text-sm">No activity yet. Enable the assistant and start using your terminal.</p>
+          <p class="text-sm">{{ $t('message.no_activity_yet') }}</p>
         </div>
       </div>
       
@@ -199,9 +199,11 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useLLMHelperStore } from '../stores/llmHelperStore'
 import { useTerminalStore } from '../stores/terminalStore'
+import { useI18n } from 'vue-i18n'
 
 const llmHelperStore = useLLMHelperStore()
 const terminalStore = useTerminalStore()
+const { t } = useI18n()
 
 const manualPrompt = ref('')
 const helperEnabled = computed({

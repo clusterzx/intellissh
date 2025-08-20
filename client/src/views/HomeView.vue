@@ -5,7 +5,7 @@
       <div class="px-4 py-6 sm:px-0">
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div class="flex items-center">
-            <h1 class="text-3xl font-bold text-slate-900 dark:text-white">SSH Sessions</h1>
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white">{{ $t('message.ssh_sessions') }}</h1>
           </div>
           <div class="flex space-x-3">
             <router-link
@@ -25,7 +25,7 @@
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              New Session
+              {{ $t('message.new_session') }}
             </button>
           </div>
         </div>
@@ -43,7 +43,7 @@
             <input
               v-model="searchQuery"
               type="search"
-              placeholder="Search sessions..."
+              :placeholder="$t('message.search_sessions')"
               class="form-input pl-10"
             />
           </div>
@@ -54,15 +54,15 @@
       <div v-if="sessionStore.isLoading" class="px-4 sm:px-0">
         <div class="text-center py-12 bg-white dark:bg-slate-800 rounded-xl shadow-soft p-8 animate-fade-in">
           <div class="spinner mx-auto mb-4 h-10 w-10 border-4"></div>
-          <p class="text-slate-600 dark:text-slate-300 text-lg">Loading sessions...</p>
+          <p class="text-slate-600 dark:text-slate-300 text-lg">{{ $t('message.loading_sessions') }}</p>
           
           <div class="mt-8">
-            <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">If loading takes too long, click the button below</p>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">{{ $t('message.loading_too_long') }}</p>
             <button 
               @click="forceRefreshSessions" 
               class="btn-primary"
             >
-              Manual Refresh
+              {{ $t('message.manual_refresh') }}
             </button>
           </div>
         </div>
@@ -76,8 +76,8 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
             </svg>
           </div>
-          <h3 class="mt-2 text-xl font-medium text-slate-900 dark:text-white">No sessions</h3>
-          <p class="mt-2 text-slate-500 dark:text-slate-400">Get started by creating a new SSH session.</p>
+          <h3 class="mt-2 text-xl font-medium text-slate-900 dark:text-white">{{ $t('message.no_sessions') }}</h3>
+          <p class="mt-2 text-slate-500 dark:text-slate-400">{{ $t('message.get_started_new_session') }}</p>
           <div class="mt-8">
             <button
               @click="showCreateModal = true"
@@ -86,7 +86,7 @@
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              New Session
+              {{ $t('message.new_session') }}
             </button>
           </div>
         </div>
@@ -100,8 +100,8 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <h3 class="mt-2 text-xl font-medium text-slate-900 dark:text-white">No results found</h3>
-          <p class="text-slate-500 dark:text-slate-400">No sessions found matching "{{ searchQuery }}"</p>
+          <h3 class="mt-2 text-xl font-medium text-slate-900 dark:text-white">{{ $t('message.no_results_found') }}</h3>
+          <p class="text-slate-500 dark:text-slate-400">{{ $t('message.no_sessions_matching', { searchQuery: searchQuery }) }}</p>
         </div>
       </div>
 
@@ -149,7 +149,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
                           <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                         </svg>
-                        Edit
+                        {{ $t('message.edit') }}
                       </button>
                       <button
                         @click="duplicateSession(session)"
@@ -159,7 +159,7 @@
                           <path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" />
                           <path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z" />
                         </svg>
-                        Duplicate
+                        {{ $t('message.duplicate') }}
                       </button>
                       <hr class="my-1 border-slate-200 dark:border-slate-700" />
                       <button
@@ -169,7 +169,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
                           <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
                         </svg>
-                        Delete
+                        {{ $t('message.delete') }}
                       </button>
                     </div>
                   </div>
@@ -186,7 +186,7 @@
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
                   </svg>
-                  <span>Updated {{ formatDate(session.updated_at) }}</span>
+                  <span>{{ $t('message.updated_prefix') }} {{ formatDate(session.updated_at) }}</span>
                 </div>
               </div>
               
@@ -201,7 +201,7 @@
                   />
                   <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-40 rounded-lg"></div>
                   <div class="absolute bottom-2 left-2 text-xs text-white font-mono bg-slate-800/80 backdrop-blur-sm px-2.5 py-1 rounded-full">
-                    Last Session
+                    {{ $t('message.last_session') }}
                   </div>
                 </div>
               </div>
@@ -213,7 +213,7 @@
                 class="w-full btn-primary"
               >
                 <span v-if="connectingToSession === session.id" class="spinner mr-2"></span>
-                {{ connectingToSession === session.id ? 'Connecting...' : 'Connect' }}
+                {{ connectingToSession === session.id ? $t('message.connecting') : $t('message.connect') }}
               </button>
             </div>
           </div>
@@ -240,16 +240,16 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-slate-900 dark:text-white mb-4 text-center">Delete Session</h3>
+        <h3 class="text-lg font-medium text-slate-900 dark:text-white mb-4 text-center">{{ $t('message.delete_session') }}</h3>
         <p class="text-sm text-slate-600 dark:text-slate-400 mb-6 text-center">
-          Are you sure you want to delete "{{ sessionToDelete.name }}"? This action cannot be undone.
+          {{ $t('message.confirm_delete_session', { sessionName: sessionToDelete.name }) }}
         </p>
         <div class="flex justify-center space-x-3">
           <button
             @click="sessionToDelete = null"
             class="btn-outline"
           >
-            Cancel
+            {{ $t('message.cancel') }}
           </button>
           <button
             @click="confirmDelete"
@@ -257,7 +257,7 @@
             class="btn-danger"
           >
             <span v-if="deletingSession" class="spinner mr-2"></span>
-            Delete
+            {{ $t('message.delete') }}
           </button>
         </div>
       </div>
@@ -295,11 +295,13 @@ import { useSessionStore } from '@/stores/sessionStore'
 import { useTerminalStore } from '@/stores/terminalStore'
 import SessionForm from '@/components/SessionForm.vue'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
+import { useI18n } from 'vue-i18n'
 
 // Stores and router
 const sessionStore = useSessionStore()
 const terminalStore = useTerminalStore()
 const router = useRouter()
+const { t } = useI18n()
 
 // State
 const searchQuery = ref('')
@@ -339,7 +341,7 @@ const duplicateSession = async (session) => {
   const result = await sessionStore.duplicateSession(session.id, newName)
   
   if (!result.success) {
-    console.error('Failed to duplicate session:', result.error)
+    console.error(t('message.failed_to_duplicate_session'), result.error)
   }
 }
 
@@ -351,9 +353,9 @@ const testConnection = async (session) => {
   
   if (result.success) {
     // Show success message (you could implement a toast notification here)
-    console.log('Connection test successful')
+    console.log(t('message.connection_test_successful'))
   } else {
-    console.error('Connection test failed:', result.error)
+    console.error(t('message.connection_test_failed'), result.error)
   }
   
   testingConnection.value = null
@@ -373,7 +375,7 @@ const confirmDelete = async () => {
   if (result.success) {
     sessionToDelete.value = null
   } else {
-    console.error('Failed to delete session:', result.error)
+    console.error(t('message.failed_to_delete_session'), result.error)
   }
   
   deletingSession.value = false
@@ -384,16 +386,16 @@ const connectToSession = async (session) => {
   
   try {
     if (terminalStore.getPersistedSessions[session.id]) {
-      console.log(`Attempting to reattach to session: ${session.id}`);
+      console.log(t('message.attempting_reattach_session') + `${session.id}`);
       await terminalStore.reattachToSession(session.id);
     } else {
-      console.log(`Attempting to connect to new session: ${session.id}`);
+      console.log(t('message.attempting_connect_new_session') + `${session.id}`);
       // The actual connection logic is now handled by connectToSession in terminalStore
       // which will either connect or reattach based on persisted state.
     }
     router.push(`/terminal/${session.id}`);
   } catch (error) {
-    console.error('Failed to connect/reattach to session:', error);
+    console.error(t('message.failed_to_connect_reattach_session'), error);
     connectingToSession.value = null;
   }
 };
@@ -421,9 +423,9 @@ const formatDate = (dateString) => {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   
   if (diffDays === 1) {
-    return 'yesterday'
+    return t('message.yesterday')
   } else if (diffDays < 7) {
-    return `${diffDays} days ago`
+    return t('message.days_ago', { diffDays: diffDays })
   } else {
     return date.toLocaleDateString()
   }
@@ -440,7 +442,7 @@ const handleClickOutside = (event) => {
 
 // Lifecycle
 onMounted(async () => {
-  console.log('HomeView mounted, initializing')
+  console.log(t('message.homeview_mounted_initializing'))
   
   // First, ensure we're not in a loading state
   sessionStore.clearLoadingState()
@@ -484,7 +486,7 @@ const refreshSessions = async () => {
     // Fetch the sessions
     await sessionStore.fetchSessions()
   } catch (err) {
-    console.error('Failed to refresh sessions:', err)
+    console.error(t('message.failed_to_refresh_sessions'), err)
   }
 }
 
@@ -495,7 +497,7 @@ const openFullScreenSnapshot = (snapshotUrl) => {
 
 // Force refresh function for the manual refresh button
 const forceRefreshSessions = async () => {
-  console.log('Manual refresh triggered')
+  console.log(t('message.manual_refresh_triggered'))
 
   // First clear any loading state and reset sessions
   sessionStore.clearLoadingState()
@@ -503,9 +505,9 @@ const forceRefreshSessions = async () => {
   // Use the store's fetchSessions method to ensure proper authentication and error handling
   try {
     await sessionStore.fetchSessions()
-    console.log('Manual refresh successful via sessionStore.fetchSessions()')
+    console.log(t('message.manual_refresh_successful'))
   } catch (err) {
-    console.error('Manual refresh failed:', err)
+    console.error(t('message.manual_refresh_failed'), err)
     // The sessionStore.fetchSessions() already handles setting error state and clearing sessions on failure
   }
 }

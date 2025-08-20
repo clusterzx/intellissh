@@ -15,16 +15,14 @@
     "axios": "^1.5.0",
     "html2canvas": "^1.4.1",
     "pinia": "^2.1.6",
+    "qrcode.vue": "^3.4.1",
     "socket.io-client": "^4.7.2",
     "vue": "^3.3.4",
+    "vue-i18n": "^12.0.0-alpha.3",
     "vue-router": "^4.2.4",
     "xterm": "^5.3.0",
     "xterm-addon-fit": "^0.8.0",
-    "xterm-addon-web-links": "^0.9.0",
-    "@headlessui/vue": "^1.7.16",
-    "@heroicons/vue": "^2.0.18",
-    "html2canvas": "^1.4.1",
-    "qrcode.vue": "^3.4.1"
+    "xterm-addon-web-links": "^0.9.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.3.4",
