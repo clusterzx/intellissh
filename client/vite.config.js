@@ -4,7 +4,12 @@ import { resolve } from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    vueI18n({
+      include: resolve(__dirname, 'src/locales/**'),
+    })
+  ],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
