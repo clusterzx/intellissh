@@ -379,7 +379,6 @@
     "direct_api_response": "Direct API response:",
     "public_reset_response": "Public reset response:",
     "api_test_response": "API test response:",
-    "status": "状态:",
     "encryption_key_sensitive_data": "Encryption key for sensitive data"
   }
 }

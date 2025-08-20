@@ -379,7 +379,6 @@
     "direct_api_response": "直接 API 响应:",
     "public_reset_response": "公共重置响应:",
     "api_test_response": "API 测试响应:",
-    "status": "状态:",
     "encryption_key_sensitive_data": "敏感数据加密密钥",
     "encryption_key_sensitive_data_description": "此密钥用于加密静态敏感数据。"
   }
