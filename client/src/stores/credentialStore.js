@@ -37,11 +37,11 @@ export const useCredentialStore = defineStore('credential', {
           },
         });
         this.credentials.push(response.data);
-        return response.data;
+        return { success: true, credential: response.data };
       } catch (err) {
         this.error = err.response?.data?.message || err.message;
         console.error('Error creating credential:', err);
-        throw err;
+        return { success: false, error: this.error };
       } finally {
         this.loading = false;
       }
@@ -59,11 +59,11 @@ export const useCredentialStore = defineStore('credential', {
         if (index !== -1) {
           this.credentials[index] = { ...this.credentials[index], ...response.data };
         }
-        return response.data;
+        return { success: true, credential: response.data };
       } catch (err) {
         this.error = err.response?.data?.message || err.message;
         console.error('Error updating credential:', err);
-        throw err;
+        return { success: false, error: this.error };
       } finally {
         this.loading = false;
       }
