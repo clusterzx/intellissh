@@ -380,8 +380,6 @@
     "registration_setting_value_after_direct_save": "直接保存后的注册设置值: {regValue}",
     "direct_api_response": "直接 API 响应:",
     "public_reset_response": "公共重置响应:",
-    "api_test_response": "API 测试响应:",
-    "encryption_key_sensitive_data": "敏感数据加密密钥",
-    "encryption_key_sensitive_data_description": "此密钥用于加密静态敏感数据。"
+    "api_test_response": "API 测试响应:"
   }
 }

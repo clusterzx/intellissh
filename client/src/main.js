@@ -4,19 +4,22 @@ import router from './router'
 import App from './App.vue'
 import './assets/main.css'
 import { createI18n } from 'vue-i18n'
-import en from './locales/en.json'
-import zhCN from './locales/zh-CN.json'
-
 const savedLanguage = localStorage.getItem('language') || 'en'
+
+// Use import.meta.glob to load all locale messages
+const messages = Object.fromEntries(
+  Object.entries(import.meta.glob('./locales/*.json', { eager: true }))
+    .map(([key, value]) => {
+      const locale = key.match(/\.\/locales\/(.*)\.json$/)[1]
+      return [locale, value.default]
+    })
+)
 
 const i18n = createI18n({
   legacy: false,
   locale: savedLanguage,
   fallbackLocale: 'en',
-  messages: {
-    en,
-    'zh-CN': zhCN
-  }
+  messages, // Pass the dynamically loaded messages
 })
 
 const app = createApp(App)

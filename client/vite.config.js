@@ -7,9 +7,6 @@ import vueI18n from '@intlify/unplugin-vue-i18n/vite'
 export default defineConfig({
   plugins: [
     vue(),
-    vueI18n({
-      include: resolve(__dirname, 'src/locales/**'),
-    })
   ],
   resolve: {
     alias: {
