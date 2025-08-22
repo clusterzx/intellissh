@@ -190,10 +190,10 @@
         <table class="min-w-full border-collapse">
           <thead class="bg-slate-800 sticky top-0 z-10">
             <tr>
-              <th class="py-2 px-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{{ $t('message.name') }}</th>
-              <th class="py-2 px-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{{ $t('message.size') }}</th>
-              <th class="py-2 px-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{{ $t('message.modified') }}</th>
-              <th class="py-2 px-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{{ $t('message.type') }}</th>
+              <th class="py-2 px-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{{ $t('message.name_table') }}</th>
+              <th class="py-2 px-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{{ $t('message.size_table') }}</th>
+              <th class="py-2 px-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{{ $t('message.modified_table') }}</th>
+              <th class="py-2 px-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{{ $t('message.type_table') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-700 bg-slate-800/50">

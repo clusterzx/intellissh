@@ -94,7 +94,7 @@
             aria-controls="sftp-sidebar"
             :class="{'bg-slate-700': showSftpSidebar}"
           >
-            <span class="sr-only">{{ showSftpSidebar ? $t('message.hide') : $t('message.show') }} {{ $t('message.sftp_browser') }}</span>
+            <span class="sr-only">{{ showSftpSidebar ? 'Hide' : 'Show' }} SFTP Browser</span>
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
             </svg>
@@ -109,7 +109,7 @@
             aria-controls="llm-sidebar"
             :class="{'bg-slate-700': showSidebar}"
           >
-            <span class="sr-only">{{ showSidebar ? $t('message.hide') : $t('message.show') }} {{ $t('message.ai_assistant') }}</span>
+            <span class="sr-only">{{ showSidebar ? 'Hide' : 'Show' }} AI Assistant</span>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
