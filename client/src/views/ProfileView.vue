@@ -127,6 +127,91 @@
         </div>
       </form>
     </div>
+
+    <!-- Two-Factor Authentication Section -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 mt-6">
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">{{ $t('message.two_factor_authentication') }}</h2>
+      
+      <div class="mb-4">
+        <p class="text-slate-700 dark:text-slate-300">
+          {{ $t('message.status') }} 
+          <span :class="authStore.currentUser?.is2faEnabled ? 'text-green-600' : 'text-red-600'">
+            {{ authStore.currentUser?.is2faEnabled ? $t('message.enabled') : $t('message.disabled') }}
+          </span>
+        </p>
+      </div>
+
+      <div v-if="!authStore.currentUser?.is2faEnabled">
+        <h3 class="text-lg font-medium text-slate-900 dark:text-white mb-3">{{ $t('message.enable_2fa') }}</h3>
+        <p class="text-slate-600 dark:text-slate-400 mb-4">
+          {{ $t('message.enable_2fa_description') }}
+        </p>
+
+        <div class="flex flex-col items-center mb-6">
+          <button
+            @click="generate2faSecret"
+            :disabled="authStore.loading"
+            class="btn-primary px-4 py-2 mb-4"
+          >
+            <span v-if="authStore.loading" class="spinner mr-2"></span>
+            {{ $t('message.generate_new_secret') }}
+          </button>
+
+          <div v-if="authStore.getOtpauthUrl" class="border p-4 rounded-lg bg-slate-50 dark:bg-slate-700">
+            <p class="text-center text-sm text-slate-600 dark:text-slate-400 mb-2">{{ $t('message.scan_qr_code') }}</p>
+            <qrcode-vue :value="authStore.getOtpauthUrl" :size="200" level="H" class="mx-auto mb-4"></qrcode-vue>
+            <p class="text-center text-sm font-mono text-slate-800 dark:text-slate-200 break-all">{{ authStore.getTotpSecret }}</p>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="totpCodeEnable" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ $t('message.6_digit_code') }}</label>
+          <input
+            id="totpCodeEnable"
+            v-model="totpCodeInput"
+            type="text"
+            :placeholder="$t('message.enter_6_digit_code')"
+            class="form-input w-full"
+          />
+        </div>
+
+        <button
+          @click="enable2fa"
+          :disabled="authStore.loading || !totpCodeInput || !authStore.getTotpSecret"
+          class="btn-primary px-4 py-2"
+        >
+          <span v-if="authStore.loading" class="spinner mr-2"></span>
+          {{ $t('message.enable_2fa') }}
+        </button>
+      </div>
+
+      <div v-else>
+        <h3 class="text-lg font-medium text-slate-900 dark:text-white mb-3">{{ $t('message.disable_2fa') }}</h3>
+        <p class="text-slate-600 dark:text-slate-400 mb-4">
+          {{ $t('message.disable_2fa_description') }}
+        </p>
+
+        <div class="mb-4">
+          <label for="totpCodeDisable" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ $t('message.6_digit_code') }}</label>
+          <input
+            id="totpCodeDisable"
+            v-model="totpCodeInput"
+            type="text"
+            :placeholder="$t('message.enter_6_digit_code')"
+            class="form-input w-full"
+          />
+        </div>
+
+        <button
+          @click="disable2fa"
+          :disabled="authStore.loading || !totpCodeInput"
+          class="btn-danger px-4 py-2"
+        >
+          <span v-if="authStore.loading" class="spinner mr-2"></span>
+          {{ $t('message.disable_2fa') }}
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -134,6 +219,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import { useI18n } from 'vue-i18n';
+import QrcodeVue from 'qrcode.vue';
 
 const authStore = useAuthStore();
 const { t } = useI18n();
@@ -162,6 +248,10 @@ const newPassword = ref('');
 const confirmPassword = ref('');
 const passwordUpdateMessage = ref('');
 const passwordUpdateError = ref('');
+
+// 2FA
+const totpCodeInput = ref('');
+const showQrCode = ref(false);
 
 // Computed properties
 const isEmailChanged = computed(() => {
@@ -248,6 +338,66 @@ const updatePassword = async () => {
   }
 };
 
+// 2FA Methods
+const generate2faSecret = async () => {
+  try {
+    await authStore.generate2faSecret();
+    showQrCode.value = true;
+  } catch (error) {
+    console.error(t('message.failed_to_generate_2fa_secret'), error);
+    alert(t('message.error_generating_2fa_secret') + (error.message || 'Unknown error'));
+  }
+};
+
+const enable2fa = async () => {
+  if (!totpCodeInput.value) {
+    alert(t('message.please_enter_6_digit_code'));
+    return;
+  }
+  if (!authStore.getTotpSecret) {
+    alert(t('message.please_generate_secret_first'));
+    return;
+  }
+  try {
+    const result = await authStore.enable2fa(totpCodeInput.value, authStore.getTotpSecret);
+    if (result.success) {
+      alert(t('message.2fa_enabled_successfully'));
+      reset2faForm();
+    } else {
+      alert(t('message.failed_to_enable_2fa') + (result.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Failed to enable 2FA:', error);
+    alert(t('message.failed_to_enable_2fa') + (error.message || 'Unknown error'));
+  }
+};
+
+const disable2fa = async () => {
+  if (!totpCodeInput.value) {
+    alert(t('message.please_enter_6_digit_code'));
+    return;
+  }
+  try {
+    const result = await authStore.disable2fa(totpCodeInput.value);
+    if (result.success) {
+      alert(t('message.2fa_disabled_successfully'));
+      reset2faForm();
+    } else {
+      alert(t('message.failed_to_disable_2fa') + (result.error || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Failed to disable 2FA:', error);
+    alert(t('message.failed_to_disable_2fa') + (error.message || 'Unknown error'));
+  }
+};
+
+const reset2faForm = () => {
+  totpCodeInput.value = '';
+  showQrCode.value = false;
+  authStore.totpSecret = null;
+  authStore.otpauthUrl = null;
+};
+
 // Load user data on component mount
 onMounted(async () => {
   if (!authStore.currentUser) {
@@ -257,5 +407,6 @@ onMounted(async () => {
   // Initialize email from store
   email.value = authStore.userEmail;
   originalEmail.value = authStore.userEmail;
+  reset2faForm();
 });
 </script>
