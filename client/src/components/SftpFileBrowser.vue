@@ -3,7 +3,7 @@
     <!-- Header with Connection Controls -->
     <div class="flex-shrink-0 p-3 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
       <div class="text-white">
-        <h3 class="text-sm font-medium">SFTP File Browser</h3>
+        <h3 class="text-sm font-medium">{{ $t('message.sftp_file_browser') }}</h3>
         <p v-if="terminalStore.activeSession" class="text-xs text-slate-300">
           {{ terminalStore.activeSession.username }}@{{ terminalStore.activeSession.hostname }}
         </p>
@@ -15,7 +15,7 @@
           @click="connectSftp" 
           class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs rounded-md shadow-sm transition-colors"
         >
-          Connect
+          {{ $t('message.connect') }}
         </button>
         
         <button 
@@ -23,7 +23,7 @@
           disabled
           class="px-3 py-1 bg-slate-600 text-white text-xs rounded-md shadow-sm opacity-70 cursor-not-allowed"
         >
-          Connecting...
+          {{ $t('message.connecting') }}
         </button>
         
         <button 
@@ -31,7 +31,7 @@
           @click="disconnectSftp" 
           class="px-3 py-1 bg-slate-600 hover:bg-slate-700 text-white text-xs rounded-md shadow-sm transition-colors"
         >
-          Disconnect
+          {{ $t('message.disconnected') }}
         </button>
       </div>
     </div>
@@ -47,7 +47,7 @@
         <div class="ml-3">
           <p>{{ terminalStore.sftpError }}</p>
           <button @click="terminalStore.clearSftpError" class="text-xs text-red-400 hover:text-red-300 mt-1 underline">
-            Dismiss
+            {{ $t('message.dismiss') }}
           </button>
         </div>
       </div>
@@ -61,16 +61,16 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16l2.879-2.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-white mb-2">No SFTP Connection</h3>
+        <h3 class="text-lg font-medium text-white mb-2">{{ $t('message.no_sftp_connection') }}</h3>
         <p class="text-slate-400 mb-4">
-          Connect to browse files and transfer data securely
+          {{ $t('message.connect_browse_files') }}
         </p>
         <button
           @click="connectSftp"
           class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md shadow-sm transition-colors"
           :disabled="!terminalStore.hasActiveSession"
         >
-          Connect to SFTP
+          {{ $t('message.connect_to_sftp') }}
         </button>
       </div>
     </div>
@@ -79,7 +79,7 @@
     <div v-if="terminalStore.sftpConnectingStatus" class="flex-1 flex items-center justify-center">
       <div class="text-center">
         <div class="spinner mx-auto mb-4 text-indigo-500 h-8 w-8 border-2"></div>
-        <p class="text-white">Connecting to SFTP...</p>
+        <p class="text-white">{{ $t('message.connecting_to_sftp') }}</p>
       </div>
     </div>
     
@@ -125,7 +125,7 @@
           <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
           </svg>
-          Upload File
+          {{ $t('message.upload_file') }}
           <input 
             type="file" 
             class="hidden" 
@@ -139,7 +139,7 @@
           <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
           </svg>
-          Upload Folder
+          {{ $t('message.upload_folder') }}
           <input 
             type="file" 
             class="hidden" 
@@ -157,7 +157,7 @@
           <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
           </svg>
-          New Folder
+          {{ $t('message.new_folder') }}
         </button>
         
         <button v-if="selectedItem" 
@@ -171,7 +171,7 @@
           <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
-          Download
+          {{ $t('message.download') }}
         </button>
         
         <button v-if="selectedItem" 
@@ -181,7 +181,7 @@
           <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>
-          Delete
+          {{ $t('message.delete') }}
         </button>
       </div>
       
@@ -190,10 +190,10 @@
         <table class="min-w-full border-collapse">
           <thead class="bg-slate-800 sticky top-0 z-10">
             <tr>
-              <th class="py-2 px-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Name</th>
-              <th class="py-2 px-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Size</th>
-              <th class="py-2 px-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Modified</th>
-              <th class="py-2 px-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Type</th>
+              <th class="py-2 px-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{{ $t('message.name_table') }}</th>
+              <th class="py-2 px-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{{ $t('message.size_table') }}</th>
+              <th class="py-2 px-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{{ $t('message.modified_table') }}</th>
+              <th class="py-2 px-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">{{ $t('message.type_table') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-700 bg-slate-800/50">
@@ -234,7 +234,7 @@
             </tr>
             <tr v-if="terminalStore.directoryContents.length === 0">
               <td colspan="4" class="py-4 text-center text-slate-400">
-                This directory is empty
+                {{ $t('message.directory_empty') }}
               </td>
             </tr>
           </tbody>
@@ -243,7 +243,7 @@
 
       <!-- Active Transfers -->
       <div v-if="hasActiveTransfers" class="flex-shrink-0 border-t border-slate-700 bg-slate-800 p-2">
-        <div class="text-xs font-medium text-slate-300 mb-2">Active Transfers</div>
+        <div class="text-xs font-medium text-slate-300 mb-2">{{ $t('message.active_transfers') }}</div>
         <div class="space-y-2 max-h-32 overflow-y-auto">
           <div 
             v-for="transfer in terminalStore.activeTransfers.filter(t => t.status !== 'complete')" 
@@ -252,7 +252,7 @@
           >
             <div class="flex justify-between mb-1">
               <span class="text-xs text-white truncate max-w-[200px]">
-                {{ transfer.type === 'upload' ? 'Uploading: ' : 'Downloading: ' }}
+                {{ transfer.type === 'upload' ? $t('message.uploading') : $t('message.downloading') }}
                 {{ transfer.type === 'upload' ? 
                   transfer.localPath.split('/').pop() : 
                   transfer.remotePath.split('/').pop() 
@@ -278,21 +278,21 @@
     <!-- Upload File Dialog -->
     <div v-if="showUploadFileDialog" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div class="bg-slate-800 rounded-lg shadow-lg max-w-md w-full p-4">
-        <h3 class="text-lg font-medium text-white mb-3">Upload File</h3>
+        <h3 class="text-lg font-medium text-white mb-3">{{ $t('message.upload_file') }}</h3>
         <div class="mb-4">
-          <label class="block text-sm font-medium text-slate-300 mb-1">Current Directory</label>
+          <label class="block text-sm font-medium text-slate-300 mb-1">{{ $t('message.current_directory') }}</label>
           <div class="bg-slate-700 text-white px-3 py-2 rounded-md text-sm">
             {{ terminalStore.currentDirectory || '/' }}
           </div>
         </div>
         
         <div class="mb-4">
-          <label class="block text-sm font-medium text-slate-300 mb-1">Local File Path</label>
+          <label class="block text-sm font-medium text-slate-300 mb-1">{{ $t('message.local_file_path') }}</label>
           <input 
             v-model="uploadLocalPath" 
             type="text" 
             class="w-full bg-slate-700 text-white px-3 py-2 rounded-md text-sm"
-            placeholder="/path/to/local/file.txt"
+            :placeholder="$t('message.local_file_path_placeholder')"
           />
         </div>
         
@@ -301,7 +301,7 @@
             @click="showUploadFileDialog = false" 
             class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded transition-colors"
           >
-            Cancel
+            {{ $t('message.cancel') }}
           </button>
           <button 
             @click="uploadFile"
@@ -311,7 +311,7 @@
               uploadLocalPath ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-700 opacity-50 cursor-not-allowed'
             ]"
           >
-            Upload
+            {{ $t('message.upload') }}
           </button>
         </div>
       </div>
@@ -320,21 +320,21 @@
     <!-- Create Directory Dialog -->
     <div v-if="showCreateDirectoryDialog" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div class="bg-slate-800 rounded-lg shadow-lg max-w-md w-full p-4">
-        <h3 class="text-lg font-medium text-white mb-3">Create New Folder</h3>
+        <h3 class="text-lg font-medium text-white mb-3">{{ $t('message.create_new_folder') }}</h3>
         <div class="mb-4">
-          <label class="block text-sm font-medium text-slate-300 mb-1">Current Directory</label>
+          <label class="block text-sm font-medium text-slate-300 mb-1">{{ $t('message.current_directory') }}</label>
           <div class="bg-slate-700 text-white px-3 py-2 rounded-md text-sm">
             {{ terminalStore.currentDirectory || '/' }}
           </div>
         </div>
         
         <div class="mb-4">
-          <label class="block text-sm font-medium text-slate-300 mb-1">Folder Name</label>
+          <label class="block text-sm font-medium text-slate-300 mb-1">{{ $t('message.folder_name') }}</label>
           <input 
             v-model="newDirectoryName" 
             type="text" 
             class="w-full bg-slate-700 text-white px-3 py-2 rounded-md text-sm"
-            placeholder="new_folder"
+            :placeholder="$t('message.new_folder_placeholder')"
           />
         </div>
         
@@ -343,7 +343,7 @@
             @click="showCreateDirectoryDialog = false" 
             class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded transition-colors"
           >
-            Cancel
+            {{ $t('message.cancel') }}
           </button>
           <button 
             @click="createDirectory"
@@ -353,7 +353,7 @@
               newDirectoryName ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-700 opacity-50 cursor-not-allowed'
             ]"
           >
-            Create
+            {{ $t('message.create') }}
           </button>
         </div>
       </div>
@@ -362,12 +362,12 @@
     <!-- Delete Confirmation Dialog -->
     <div v-if="showDeleteDialog" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div class="bg-slate-800 rounded-lg shadow-lg max-w-md w-full p-4">
-        <h3 class="text-lg font-medium text-white mb-3">Confirm Delete</h3>
+        <h3 class="text-lg font-medium text-white mb-3">{{ $t('message.confirm_delete') }}</h3>
         <p class="text-slate-300 mb-4">
-          Are you sure you want to delete 
+          {{ $t('message.confirm_delete_item') }}
           <span class="font-medium text-white">{{ selectedItem?.filename }}</span>?
           <br>
-          <span class="text-red-400 text-sm">This action cannot be undone.</span>
+          <span class="text-red-400 text-sm">{{ $t('message.action_cannot_be_undone') }}</span>
         </p>
         
         <div class="flex justify-end space-x-3">
@@ -375,13 +375,13 @@
             @click="showDeleteDialog = false" 
             class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded transition-colors"
           >
-            Cancel
+            {{ $t('message.cancel') }}
           </button>
           <button 
             @click="deleteItem"
             class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
           >
-            Delete
+            {{ $t('message.delete') }}
           </button>
         </div>
       </div>
@@ -390,21 +390,21 @@
     <!-- Download Dialog -->
     <div v-if="showDownloadDialog" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div class="bg-slate-800 rounded-lg shadow-lg max-w-md w-full p-4">
-        <h3 class="text-lg font-medium text-white mb-3">Download File</h3>
+        <h3 class="text-lg font-medium text-white mb-3">{{ $t('message.download_file') }}</h3>
         <div class="mb-4">
-          <label class="block text-sm font-medium text-slate-300 mb-1">Remote File</label>
+          <label class="block text-sm font-medium text-slate-300 mb-1">{{ $t('message.remote_file') }}</label>
           <div class="bg-slate-700 text-white px-3 py-2 rounded-md text-sm">
             {{ getFullPath(selectedItem?.filename) }}
           </div>
         </div>
         
         <div class="mb-4">
-          <label class="block text-sm font-medium text-slate-300 mb-1">Local Destination Path</label>
+          <label class="block text-sm font-medium text-slate-300 mb-1">{{ $t('message.local_destination_path') }}</label>
           <input 
             v-model="downloadLocalPath" 
             type="text" 
             class="w-full bg-slate-700 text-white px-3 py-2 rounded-md text-sm"
-            placeholder="/path/to/save/file.txt"
+            :placeholder="$t('message.local_destination_path_placeholder')"
           />
         </div>
         
@@ -413,7 +413,7 @@
             @click="showDownloadDialog = false" 
             class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded transition-colors"
           >
-            Cancel
+            {{ $t('message.cancel') }}
           </button>
           <button 
             @click="downloadFile"
@@ -423,7 +423,7 @@
               downloadLocalPath ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-700 opacity-50 cursor-not-allowed'
             ]"
           >
-            Download
+            {{ $t('message.download') }}
           </button>
         </div>
       </div>
@@ -435,8 +435,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useTerminalStore } from '@/stores/terminalStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useI18n } from 'vue-i18n'
 
 const terminalStore = useTerminalStore()
+const { t } = useI18n()
 
 // State
 const loading = ref(false)
@@ -475,7 +477,7 @@ const canDownload = computed(() => {
 // Methods
 const connectSftp = async () => {
   if (!terminalStore.hasActiveSession) {
-    terminalStore.sftpConnectionError = 'No active terminal session. Connect to SSH first.'
+    terminalStore.sftpConnectionError = t('message.no_active_terminal_session')
     return
   }
   
@@ -808,11 +810,11 @@ const handleFileUpload = async (event) => {
     await listCurrentDirectory()
     
     // Show success message
-    alert(`File ${file.name} uploaded successfully to ${remotePath}`)
+    alert(t('message.file_uploaded_successfully', { fileName: file.name, remotePath: remotePath }))
     
   } catch (error) {
     console.error('Failed to process file upload:', error)
-    alert(`Upload failed: ${error.message}`)
+    alert(t('message.upload_failed') + error.message)
   } finally {
     loading.value = false
     // Reset the file input
@@ -861,16 +863,14 @@ const handleFolderUpload = async (event) => {
       console.log(`Would upload folder ${mainFolder} with ${filesByFolder[mainFolder].length} files to ${remoteFolderPath}`)
       
       // Notify user
-      alert(`Folder upload functionality requires server-side implementation. 
-The folder structure was detected (${mainFolder} with ${filesByFolder[mainFolder].length} files) 
-and the main folder was created at ${remoteFolderPath}.`)
+      alert(t('message.folder_upload_note', { mainFolder: mainFolder, fileCount: filesByFolder[mainFolder].length, remotePath: remoteFolderPath }))
       
       // Refresh to show at least the created directory
       await listCurrentDirectory()
     }
     
   } catch (error) {
-    console.error('Failed to process folder upload:', error)
+    console.error(t('message.failed_to_process_folder_upload'), error)
   } finally {
     loading.value = false
     // Reset the file input
@@ -879,40 +879,40 @@ and the main folder was created at ${remoteFolderPath}.`)
 }
 
 const getItemType = (item) => {
-  if (item.attrs.isDirectory) return 'Directory'
-  if (item.attrs.isSymlink) return 'Symlink'
+  if (item.attrs.isDirectory) return t('message.directory')
+  if (item.attrs.isSymlink) return t('message.symlink')
   
   // Try to determine file type from extension
   const ext = item.filename.split('.').pop().toLowerCase()
   
   switch (ext) {
-    case 'txt': return 'Text File'
-    case 'pdf': return 'PDF Document'
+    case 'txt': return t('message.text_file')
+    case 'pdf': return t('message.pdf_document')
     case 'jpg':
     case 'jpeg':
     case 'png':
-    case 'gif': return 'Image'
+    case 'gif': return t('message.image')
     case 'mp3':
-    case 'wav': return 'Audio'
+    case 'wav': return t('message.audio')
     case 'mp4':
     case 'avi':
-    case 'mov': return 'Video'
-    case 'js': return 'JavaScript'
-    case 'ts': return 'TypeScript'
-    case 'html': return 'HTML'
-    case 'css': return 'CSS'
-    case 'json': return 'JSON'
-    case 'md': return 'Markdown'
-    case 'py': return 'Python'
-    case 'java': return 'Java'
+    case 'mov': return t('message.video')
+    case 'js': return t('message.javascript')
+    case 'ts': return t('message.typescript')
+    case 'html': return t('message.html')
+    case 'css': return t('message.css')
+    case 'json': return t('message.json')
+    case 'md': return t('message.markdown')
+    case 'py': return t('message.python')
+    case 'java': return t('message.java')
     case 'c':
-    case 'cpp': return 'C/C++'
-    case 'php': return 'PHP'
-    case 'sh': return 'Shell Script'
+    case 'cpp': return t('message.c_cpp')
+    case 'php': return t('message.php')
+    case 'sh': return t('message.shell_script')
     case 'zip':
     case 'tar':
-    case 'gz': return 'Archive'
-    default: return 'File'
+    case 'gz': return t('message.archive')
+    default: return t('message.file')
   }
 }
 

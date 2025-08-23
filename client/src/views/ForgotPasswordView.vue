@@ -3,10 +3,10 @@
     <div class="max-w-md w-full space-y-8 bg-white dark:bg-slate-800 p-8 rounded-lg shadow-lg">
       <div>
         <h2 class="mt-6 text-center text-3xl font-extrabold text-slate-900 dark:text-white">
-          Forgot your password?
+          {{ $t('message.forgot_password_title') }}
         </h2>
         <p class="mt-2 text-center text-sm text-slate-600 dark:text-slate-400">
-          Enter your username or email address, and we'll send you a link to reset your password.
+          {{ $t('message.forgot_password_description') }}
         </p>
       </div>
       
@@ -45,7 +45,7 @@
       <form v-if="!successMessage" class="mt-8 space-y-6" @submit.prevent="handleSubmit">
         <div class="rounded-md shadow-sm -space-y-px">
           <div>
-            <label for="username-or-email" class="sr-only">Username or Email</label>
+            <label for="username-or-email" class="sr-only">{{ $t('message.username_or_email') }}</label>
             <input
               id="username-or-email"
               v-model="usernameOrEmail"
@@ -54,7 +54,7 @@
               autocomplete="username email"
               required
               class="appearance-none relative block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 placeholder-slate-500 text-slate-900 dark:text-white dark:bg-slate-700 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Username or Email address"
+              :placeholder="$t('message.username_or_email')"
             />
           </div>
         </div>
@@ -72,7 +72,7 @@
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             </span>
-            <span>{{ loading ? 'Sending Reset Link...' : 'Send Password Reset Link' }}</span>
+            <span>{{ loading ? $t('message.sending_reset_link') : $t('message.send_password_reset_link') }}</span>
           </button>
         </div>
       </form>
@@ -80,7 +80,7 @@
       <div class="mt-6 text-center">
         <div class="text-sm">
           <router-link to="/login" class="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
-            Remember your password? Sign in
+            {{ $t('message.remember_password_signin') }}
           </router-link>
         </div>
       </div>
@@ -92,9 +92,11 @@
 import { ref } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 
 const authStore = useAuthStore();
 const router = useRouter();
+const { t } = useI18n();
 
 const usernameOrEmail = ref('');
 const loading = ref(false);
@@ -103,7 +105,7 @@ const successMessage = ref('');
 
 const handleSubmit = async () => {
   if (!usernameOrEmail.value) {
-    errorMessage.value = 'Please enter your username or email address.';
+    errorMessage.value = t('message.enter_username_or_email');
     return;
   }
   
@@ -120,7 +122,7 @@ const handleSubmit = async () => {
     }
   } catch (error) {
     console.error('Error requesting password reset:', error);
-    errorMessage.value = 'An unexpected error occurred. Please try again.';
+    errorMessage.value = t('message.unexpected_error');
   } finally {
     loading.value = false;
   }

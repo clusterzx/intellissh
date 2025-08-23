@@ -17,17 +17,24 @@ export const useSessionStore = defineStore('session', () => {
 
   // Actions
   const fetchSessions = async () => {
+    // console.log('fetchSessions: Starting...')
     loading.value = true
     error.value = null
 
     try {
       const response = await axios.get('/api/sessions')
-      sessions.value = response.data.sessions
+      sessions.value = response.data.sessions.map(session => ({
+        ...session,
+        credentialId: session.credential_id // Map backend's credential_id to frontend's credentialId
+      }))
+      // console.log('fetchSessions: Successfully fetched sessions.')
       return { success: true }
     } catch (err) {
+      // console.error('fetchSessions: Error fetching sessions:', err)
       error.value = err.response?.data?.error || 'Failed to fetch sessions'
       return { success: false, error: error.value }
     } finally {
+      // console.log('fetchSessions: Finally block - setting loading to false.')
       loading.value = false
     }
   }
@@ -38,8 +45,11 @@ export const useSessionStore = defineStore('session', () => {
 
     try {
       const response = await axios.get(`/api/sessions/${sessionId}`)
-      currentSession.value = response.data.session
-      return { success: true, session: response.data.session }
+      currentSession.value = {
+        ...response.data.session,
+        credentialId: response.data.session.credential_id // Map backend's credential_id
+      }
+      return { success: true, session: currentSession.value }
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to fetch session'
       return { success: false, error: error.value }
@@ -74,7 +84,10 @@ export const useSessionStore = defineStore('session', () => {
 
     try {
       const response = await axios.put(`/api/sessions/${sessionId}`, sessionData)
-      const updatedSession = response.data.session
+      const updatedSession = {
+        ...response.data.session,
+        credentialId: response.data.session.credential_id // Map backend's credential_id
+      }
       
       // Update in local sessions array
       const index = sessions.value.findIndex(s => s.id === sessionId)

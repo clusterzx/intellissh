@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const db = require('../db/database');
 const emailService = require('./emailService');
+const speakeasy = require('speakeasy');
 
 class AuthService {
   constructor() {
@@ -76,6 +77,19 @@ class AuthService {
         throw new Error('Invalid credentials');
       }
 
+      // Check if 2FA is enabled for the user
+      if (user.is2faEnabled) {
+        return {
+          requires2fa: true,
+          user: {
+            id: user.id,
+            username: user.username,
+            role: user.role || 'user',
+            created_at: user.created_at
+          }
+        };
+      }
+
       // Generate JWT token with role included
       const token = jwt.sign(
         { 
@@ -102,6 +116,49 @@ class AuthService {
     }
   }
 
+  async loginUserWith2fa(userId, totpCode) {
+    try {
+      const user = await db.get(
+        'SELECT * FROM users WHERE id = ?',
+        [userId]
+      );
+
+      if (!user || !user.is2faEnabled) {
+        throw new Error('2FA not enabled for this user');
+      }
+
+      const isTotpValid = await this.verifyTotpCode(userId, totpCode);
+
+      if (!isTotpValid) {
+        throw new Error('Invalid 2FA code');
+      }
+
+      // Generate JWT token with role included
+      const token = jwt.sign(
+        { 
+          id: user.id, 
+          username: user.username,
+          role: user.role || 'user' // Default to 'user' if role is not set
+        },
+        this.jwtSecret,
+        { expiresIn: this.jwtExpiresIn }
+      );
+
+      return {
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
+          role: user.role || 'user',
+          created_at: user.created_at
+        }
+      };
+    } catch (error) {
+      console.error('2FA Login error:', error.message);
+      throw error;
+    }
+  }
+
   verifyToken(token) {
     try {
       const decoded = jwt.verify(token, this.jwtSecret);
@@ -115,7 +172,7 @@ class AuthService {
   async getUserById(id) {
     try {
       const user = await db.get(
-        'SELECT id, username, email, role, created_at FROM users WHERE id = ?',
+        'SELECT id, username, email, role, created_at, is2faEnabled FROM users WHERE id = ?',
         [id]
       );
 
@@ -221,6 +278,81 @@ class AuthService {
     }
 
     return parts[1];
+  }
+
+  async generateTotpSecret(userId) {
+    try {
+      const secret = speakeasy.generateSecret({
+        length: 20,
+        name: 'IntelliSSH', // Application name
+        issuer: 'IntelliSSH' // Issuer name
+      });
+
+      // Store the secret in the database for the user
+      await db.run(
+        'UPDATE users SET totpSecret = ? WHERE id = ?',
+        [secret.base32, userId]
+      );
+
+      return {
+        secret: secret.base32,
+        otpauthUrl: secret.otpauth_url
+      };
+    } catch (error) {
+      console.error('Error generating TOTP secret:', error.message);
+      throw error;
+    }
+  }
+
+  async verifyTotpCode(userId, token) {
+    try {
+      const user = await db.get(
+        'SELECT totpSecret FROM users WHERE id = ?',
+        [userId]
+      );
+
+      if (!user || !user.totpSecret) {
+        throw new Error('TOTP secret not found for user');
+      }
+
+      const verified = speakeasy.totp.verify({
+        secret: user.totpSecret,
+        encoding: 'base32',
+        token: token,
+        window: 1 // Allow a 30-second window either side of the current time
+      });
+
+      return verified;
+    } catch (error) {
+      console.error('Error verifying TOTP code:', error.message);
+      throw error;
+    }
+  }
+
+  async enable2fa(userId, secret) {
+    try {
+      await db.run(
+        'UPDATE users SET totpSecret = ?, is2faEnabled = 1 WHERE id = ?',
+        [secret, userId]
+      );
+      return { success: true, message: '2FA enabled successfully' };
+    } catch (error) {
+      console.error('Error enabling 2FA:', error.message);
+      throw error;
+    }
+  }
+
+  async disable2fa(userId) {
+    try {
+      await db.run(
+        'UPDATE users SET totpSecret = NULL, is2faEnabled = 0 WHERE id = ?',
+        [userId]
+      );
+      return { success: true, message: '2FA disabled successfully' };
+    } catch (error) {
+      console.error('Error disabling 2FA:', error.message);
+      throw error;
+    }
   }
 
   // Password reset methods

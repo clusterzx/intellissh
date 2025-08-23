@@ -32,7 +32,8 @@
     "socket.io": "^4.7.2",
     "sqlite3": "^5.1.6",
     "ssh2": "^1.14.0",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "speakeasy": "^2.0.0"
   },
   "devDependencies": {
     "jest": "^29.6.2",

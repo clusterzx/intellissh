@@ -10,26 +10,29 @@
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore"
   },
   "dependencies": {
-    "vue": "^3.3.4",
-    "vue-router": "^4.2.4",
-    "pinia": "^2.1.6",
-    "axios": "^1.5.0",
-    "socket.io-client": "^4.7.2",
-    "xterm": "^5.3.0",
-    "xterm-addon-fit": "^0.8.0",
-    "xterm-addon-web-links": "^0.9.0",
     "@headlessui/vue": "^1.7.16",
     "@heroicons/vue": "^2.0.18",
-    "html2canvas": "^1.4.1"
+    "axios": "^1.5.0",
+    "html2canvas": "^1.4.1",
+    "pinia": "^2.1.6",
+    "qrcode.vue": "^3.4.1",
+    "socket.io-client": "^4.7.2",
+    "vue": "^3.3.4",
+    "vue-i18n": "^9.14.5",
+    "vue-router": "^4.2.4",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0",
+    "xterm-addon-web-links": "^0.9.0"
   },
   "devDependencies": {
+    "@intlify/unplugin-vue-i18n": "^6.0.8",
     "@vitejs/plugin-vue": "^4.3.4",
-    "vite": "^4.4.9",
+    "autoprefixer": "^10.4.15",
     "eslint": "^8.47.0",
     "eslint-plugin-vue": "^9.17.0",
-    "tailwindcss": "^3.3.3",
-    "autoprefixer": "^10.4.15",
     "postcss": "^8.4.28",
-    "terser": "^5.30.3"
+    "tailwindcss": "^3.3.3",
+    "terser": "^5.30.3",
+    "vite": "^4.4.9"
   }
 }
