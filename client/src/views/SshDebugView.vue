@@ -3,32 +3,32 @@
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="text-center mb-8">
         <div class="flex justify-center items-center mb-4">
-          <h1 class="text-3xl font-bold text-slate-900 dark:text-white">SSH Debug Tool</h1>
+          <h1 class="text-3xl font-bold text-slate-900 dark:text-white">{{ $t('message.ssh_debug_tool') }}</h1>
           <DarkModeToggle class="ml-4" />
         </div>
-        <p class="mt-2 text-lg text-slate-600 dark:text-slate-400">Test SSH connections with encrypted private keys</p>
+        <p class="mt-2 text-lg text-slate-600 dark:text-slate-400">{{ $t('message.test_ssh_connections') }}</p>
       </div>
 
       <div class="bg-white dark:bg-slate-800 shadow-soft rounded-xl p-6 border border-slate-200 dark:border-slate-700 transition-colors duration-200">
         <form @submit.prevent="testConnection">
           <!-- Server Details -->
           <div class="mb-6">
-            <h2 class="text-xl font-medium text-slate-900 dark:text-white mb-4">Server Details</h2>
+            <h2 class="text-xl font-medium text-slate-900 dark:text-white mb-4">{{ $t('message.server_details') }}</h2>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label for="hostname" class="form-label">Hostname/IP</label>
+                <label for="hostname" class="form-label">{{ $t('message.hostname_ip') }}</label>
                 <input
                   id="hostname"
                   v-model="form.hostname"
                   type="text"
                   required
                   class="form-input"
-                  placeholder="example.com or 192.168.1.100"
+                  :placeholder="$t('message.example_hostname_ip')"
                 />
               </div>
 
               <div>
-                <label for="port" class="form-label">Port</label>
+                <label for="port" class="form-label">{{ $t('message.port') }}</label>
                 <input
                   id="port"
                   v-model.number="form.port"
@@ -41,14 +41,14 @@
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4">
               <div>
-                <label for="username" class="form-label">Username</label>
+                <label for="username" class="form-label">{{ $t('message.username_debug') }}</label>
                 <input
                   id="username"
                   v-model="form.username"
                   type="text"
                   required
                   class="form-input"
-                  placeholder="root"
+                  :placeholder="$t('message.root_placeholder')"
                 />
               </div>
             </div>
@@ -56,33 +56,33 @@
 
           <!-- Private Key -->
           <div class="mb-6">
-            <h2 class="text-xl font-medium text-slate-900 dark:text-white mb-4">Private Key</h2>
+            <h2 class="text-xl font-medium text-slate-900 dark:text-white mb-4">{{ $t('message.private_key') }}</h2>
             <div>
-              <label for="privateKey" class="form-label">Private Key Content</label>
+              <label for="privateKey" class="form-label">{{ $t('message.private_key_content') }}</label>
               <textarea
                 id="privateKey"
                 v-model="form.privateKey"
                 rows="10"
                 required
                 class="form-input font-mono text-sm"
-                placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;...&#10;-----END OPENSSH PRIVATE KEY-----"
+                :placeholder="$t('message.private_key_placeholder')"
               ></textarea>
               <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Paste your private key content here (including BEGIN and END lines)
+                {{ $t('message.paste_private_key_content') }}
               </p>
             </div>
 
             <div class="mt-4">
-              <label for="keyPassphrase" class="form-label">Key Passphrase (if encrypted)</label>
+              <label for="keyPassphrase" class="form-label">{{ $t('message.key_passphrase') }}</label>
               <input
                 id="keyPassphrase"
                 v-model="form.keyPassphrase"
                 type="password"
                 class="form-input"
-                placeholder="Enter passphrase"
+                :placeholder="$t('message.enter_passphrase')"
               />
               <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                If your private key is encrypted, enter the passphrase to decrypt it
+                {{ $t('message.passphrase_description') }}
               </p>
             </div>
           </div>
@@ -95,14 +95,14 @@
               class="btn-primary py-2.5 px-6"
             >
               <span v-if="isLoading" class="spinner mr-2"></span>
-              {{ isLoading ? 'Testing Connection...' : 'Test SSH Connection' }}
+              {{ isLoading ? $t('message.testing_connection') : $t('message.test_ssh_connection') }}
             </button>
           </div>
         </form>
 
         <!-- Results -->
         <div v-if="result" class="mt-8 animate-fade-in">
-          <h2 class="text-xl font-medium text-slate-900 dark:text-white mb-4">Test Results</h2>
+          <h2 class="text-xl font-medium text-slate-900 dark:text-white mb-4">{{ $t('message.test_results') }}</h2>
           
           <div v-if="result.success" class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50 rounded-xl p-4">
             <div class="flex">
@@ -114,7 +114,7 @@
                 </div>
               </div>
               <div class="ml-3">
-                <h3 class="text-base font-medium text-green-800 dark:text-green-300">Connection Successful</h3>
+                <h3 class="text-base font-medium text-green-800 dark:text-green-300">{{ $t('message.connection_successful') }}</h3>
                 <div class="mt-2 text-sm text-green-700 dark:text-green-200">
                   <p>{{ result.message }}</p>
                 </div>
@@ -132,7 +132,7 @@
                 </div>
               </div>
               <div class="ml-3">
-                <h3 class="text-base font-medium text-red-800 dark:text-red-300">Connection Failed</h3>
+                <h3 class="text-base font-medium text-red-800 dark:text-red-300">{{ $t('message.connection_failed_debug') }}</h3>
                 <div class="mt-2 text-sm text-red-700 dark:text-red-200">
                   <p>{{ result.message }}</p>
                   <div v-if="result.details" class="mt-2 p-3 bg-red-100 dark:bg-red-900/40 rounded-lg overflow-auto max-h-48 custom-scrollbar">
@@ -148,7 +148,7 @@
       <!-- Navigation -->
       <div class="mt-6 text-center">
         <router-link to="/" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors">
-          &larr; Back to Sessions
+          &larr; {{ $t('message.back_to_sessions') }}
         </router-link>
       </div>
     </div>
@@ -159,6 +159,7 @@
 import { ref } from 'vue'
 import axios from 'axios'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
+import { useI18n } from 'vue-i18n'
 
 // Form state
 const form = ref({
@@ -171,6 +172,7 @@ const form = ref({
 
 const isLoading = ref(false)
 const result = ref(null)
+const { t } = useI18n()
 
 // Test SSH connection
 async function testConnection() {
@@ -188,10 +190,10 @@ async function testConnection() {
     
     result.value = {
       success: true,
-      message: response.data.message || 'Connection successful'
+      message: response.data.message || t('message.connection_successful')
     }
   } catch (error) {
-    let errorMessage = 'Connection failed'
+    let errorMessage = t('message.connection_failed_debug')
     let errorDetails = null
     
     if (error.response) {

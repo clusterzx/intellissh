@@ -26,7 +26,16 @@
                   ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400' 
                   : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'"
               >
-                Sessions
+                {{ $t('message.ssh_sessions') }}
+              </router-link>
+              <router-link
+                to="/credentials"
+                class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors"
+                :class="$route.name === 'credentials' 
+                  ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400' 
+                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'"
+              >
+                {{ $t('message.credential_management') }}
               </router-link>
               <router-link
                 to="/settings"
@@ -35,7 +44,7 @@
                   ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400' 
                   : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'"
               >
-                Settings
+                {{ $t('message.settings') }}
               </router-link>
               <router-link
                 to="/profile"
@@ -44,7 +53,7 @@
                   ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400 dark:border-indigo-400' 
                   : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'"
               >
-                Profile
+                {{ $t('message.user_profile') }}
               </router-link>
             </div>
           </div>
@@ -54,19 +63,22 @@
             <!-- Connection Status -->
             <div v-if="terminalStore.socketConnected" class="hidden sm:flex items-center text-sm text-slate-500 dark:text-slate-400">
               <div class="status-indicator status-connected mr-2"></div>
-              Connected
+              {{ $t('message.connected') }}
             </div>
             <div v-else-if="terminalStore.connecting" class="hidden sm:flex items-center text-sm text-slate-500 dark:text-slate-400">
               <div class="status-indicator status-connecting mr-2"></div>
-              Connecting...
+              {{ $t('message.connecting') }}
             </div>
             <div v-else class="hidden sm:flex items-center text-sm text-slate-500 dark:text-slate-400">
               <div class="status-indicator status-disconnected mr-2"></div>
-              Disconnected
+              {{ $t('message.disconnected') }}
             </div>
 
             <!-- Dark Mode Toggle -->
             <DarkModeToggle />
+
+            <!-- Language Switcher -->
+            <LanguageSwitcher />
 
             <!-- User Info -->
             <div class="flex items-center space-x-4">
@@ -75,7 +87,7 @@
                 @click="handleLogout"
                 class="btn-ghost px-3 py-1.5 text-sm"
               >
-                Logout
+                {{ $t('message.logout') }}
               </button>
             </div>
           </div>
@@ -135,12 +147,15 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import { useTerminalStore } from '@/stores/terminalStore'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+import { useI18n } from 'vue-i18n'
 
 // Stores and router
 const authStore = useAuthStore()
 const terminalStore = useTerminalStore()
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 
 // State
 const showGlobalLoading = ref(false)
@@ -149,6 +164,7 @@ const globalError = ref('')
 const appVersion = ref(APP_VERSION)
 
 // Computed
+const translatedHello = computed(() => t('message.hello'))
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isTerminalView = computed(() => {
   return route.name === 'terminal' || 
@@ -160,11 +176,11 @@ const isTerminalView = computed(() => {
 // Methods
 const handleLogout = async () => {
   showGlobalLoading.value = true
-  loadingMessage.value = 'Logging out...'
+  loadingMessage.value = t('message.logging_out')
   
   try {
     // Disconnect terminal
-    terminalStore.disconnect()
+    terminalStore.disconnectSession()
     
     // Logout user
     await authStore.logout()
@@ -172,7 +188,7 @@ const handleLogout = async () => {
     // Redirect to login
     router.push('/login')
   } catch (error) {
-    globalError.value = 'Logout failed'
+    globalError.value = t('message.logout_failed')
   } finally {
     showGlobalLoading.value = false
   }
@@ -191,7 +207,7 @@ const initializeApp = async () => {
     try {
       await terminalStore.init()
     } catch (error) {
-      console.error('Failed to initialize terminal connection:', error)
+      console.error(t('message.failed_init_terminal'), error)
       // Don't show error immediately, let user try to connect manually
     }
   }

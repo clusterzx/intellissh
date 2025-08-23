@@ -76,7 +76,8 @@ router.post('/', async (req, res) => {
       username: req.body.username,
       password: req.body.password,
       privateKey: req.body.privateKey,
-      keyPassphrase: req.body.keyPassphrase
+      keyPassphrase: req.body.keyPassphrase,
+      credentialId: req.body.credentialId
     };
 
     // Validate session data
@@ -124,7 +125,8 @@ router.put('/:id', async (req, res) => {
       username: req.body.username,
       password: req.body.password,
       privateKey: req.body.privateKey,
-      keyPassphrase: req.body.keyPassphrase
+      keyPassphrase: req.body.keyPassphrase,
+      credentialId: req.body.credentialId
     };
 
     // Validate session data

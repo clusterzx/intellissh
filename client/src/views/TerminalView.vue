@@ -25,7 +25,7 @@
                 class="ml-3 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
               >
                 <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-green-500 dark:bg-green-400 animate-pulse"></span>
-                Live
+                {{ $t('message.live') }}
               </span>
               <span class="ml-3 text-xs bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 px-1.5 py-0.5 rounded">
                 v{{ appVersion }}
@@ -54,10 +54,10 @@
             <span class="text-sm text-slate-300 dark:text-slate-400">
               {{
                 terminalStore.hasActiveSession
-                  ? 'Connected'
+                  ? $t('message.connected')
                   : terminalStore.connecting
-                  ? 'Connecting...'
-                  : 'Disconnected'
+                  ? $t('message.connecting')
+                  : $t('message.disconnected')
               }}
             </span>
           </div>
@@ -72,7 +72,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
               </svg>
-              Connect
+              {{ $t('message.connect') }}
             </button>
             <button
               v-if="terminalStore.hasActiveSession"
@@ -82,7 +82,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
               </svg>
-              Disconnect
+              {{ $t('message.disconnected') }}
             </button>
           </div>
           <!-- SFTP File Browser Toggle -->
@@ -129,7 +129,7 @@
         >
           <div class="text-center bg-slate-800/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl p-6 shadow-lg animate-fade-in">
             <div class="spinner mx-auto mb-4 text-indigo-500 dark:text-indigo-400 h-8 w-8 border-2"></div>
-            <p class="text-white">{{ loadingMessage }}</p>
+            <p class="text-white">{{ $t('message.loading_session') }}</p>
           </div>
         </div>
 
@@ -144,10 +144,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h3 class="text-lg font-medium text-white mb-2">Connection Failed</h3>
+            <h3 class="text-lg font-medium text-white mb-2">{{ $t('message.connection_failed') }}</h3>
             <p class="text-slate-300 dark:text-slate-400 mb-6">{{ error }}</p>
             <button @click="connect" class="btn-primary">
-              Try Again
+              {{ $t('message.try_again') }}
             </button>
           </div>
         </div>
@@ -163,10 +163,10 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
               </svg>
             </div>
-            <h3 class="text-xl font-medium text-white mb-2">No Session Selected</h3>
-            <p class="text-slate-300 dark:text-slate-400 mb-6">Select a session to start a terminal connection.</p>
+            <h3 class="text-xl font-medium text-white mb-2">{{ $t('message.no_session_selected') }}</h3>
+            <p class="text-slate-300 dark:text-slate-400 mb-6">{{ $t('message.select_session_to_connect') }}</p>
             <a href="/" @click.prevent="hardRedirect" class="btn-primary">
-              View Sessions
+              {{ $t('message.view_sessions') }}
             </a>
           </div>
         </div>
@@ -192,7 +192,7 @@
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2" />
           </svg>
-          Copy
+          {{ $t('message.copy') }}
         </button>
         <button
           class="w-full text-left px-4 py-2 text-white hover:bg-slate-700 text-sm flex items-center"
@@ -201,7 +201,7 @@
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
-          Paste
+          {{ $t('message.paste') }}
         </button>
       </div>
       </div>
@@ -298,12 +298,14 @@ import { APP_VERSION } from '@/utils/constants'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import { WebLinksAddon } from 'xterm-addon-web-links'
+
 import { useTerminalStore } from '@/stores/terminalStore'
 import { useSessionStore } from '@/stores/sessionStore'
 import LLMHelper from '@/components/LLMHelper.vue'
 import SftpFileBrowser from '@/components/SftpFileBrowser.vue'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
 import html2canvas from 'html2canvas'
+import { useI18n } from 'vue-i18n'
 
 // Props
 const props = defineProps({
@@ -318,11 +320,13 @@ const terminalStore = useTerminalStore()
 const sessionStore = useSessionStore()
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 // State
 const terminalContainer = ref(null)
 const terminal = ref(null)
 const fitAddon = ref(null)
+
 const loading = ref(false)
 const loadingMessage = ref('')
 const error = ref('')
@@ -418,13 +422,7 @@ const initializeTerminal = () => {
   // Initialize the terminal UI
   terminal.value.open(terminalContainer.value)
   
-  // Try to load the WebGL addon for better performance
-  try {
-    const webglAddon = new WebglAddon()
-    terminal.value.loadAddon(webglAddon)
-  } catch (error) {
-    console.warn('WebGL addon could not be loaded:', error)
-  }
+  
   
   // Use nextTick to ensure the DOM has updated before fitting
   nextTick(() => {
@@ -454,7 +452,7 @@ const loadSession = async () => {
   if (!sessionId.value) return
 
   loading.value = true
-  loadingMessage.value = 'Loading session...'
+  loadingMessage.value = t('message.loading_session')
 
   try {
     const result = await sessionStore.getSession(sessionId.value)
@@ -473,12 +471,12 @@ const loadSession = async () => {
 
 const connect = async () => {
   if (!sessionId.value) {
-    error.value = 'No session selected'
+    error.value = t('message.no_session_selected')
     return
   }
 
   loading.value = true
-  loadingMessage.value = 'Connecting to SSH session...'
+  loadingMessage.value = t('message.connecting')
   error.value = ''
 
   try {
@@ -499,7 +497,7 @@ const connect = async () => {
     // Focus terminal
     terminal.value?.focus()
   } catch (err) {
-    error.value = err.message || 'Failed to connect to SSH session'
+    error.value = err.message || t('message.connection_failed')
     console.error('Connection failed:', err)
   } finally {
     loading.value = false
@@ -530,26 +528,33 @@ const captureTerminalSnapshot = async () => {
 }
 
 const disconnect = async () => {
+  console.log('Disconnect button clicked.');
   // Capture terminal snapshot before disconnecting
   if (terminalStore.hasActiveSession && terminalReady.value && currentSession.value) {
     try {
-      const snapshotData = await captureTerminalSnapshot()
+      console.log('Attempting to capture terminal snapshot...');
+      const snapshotData = await captureTerminalSnapshot();
       if (snapshotData) {
+        console.log('Snapshot captured, attempting to save...');
         // Save snapshot to the server
-        await sessionStore.saveConsoleSnapshot(currentSession.value.id, snapshotData)
-        console.log('Terminal snapshot saved for session:', currentSession.value.id)
+        await sessionStore.saveConsoleSnapshot(currentSession.value.id, snapshotData);
+        console.log('Terminal snapshot saved for session:', currentSession.value.id);
+      } else {
+        console.warn('No snapshot data captured.');
       }
     } catch (error) {
-      console.error('Failed to save terminal snapshot:', error)
+      console.error('Failed to save terminal snapshot:', error);
     }
   }
   
   // Disconnect session
-  terminalStore.disconnectSession()
-  if (terminal.value) {
-    terminal.value.clear()
-  }
-}
+  console.log('Calling terminalStore.disconnectSession()...');
+  await terminalStore.disconnectSession();
+  console.log('Disconnect process initiated.');
+
+  // Redirect to homepage after successful disconnection
+  router.push('/');
+};
 
 const handleResize = () => {
   if (fitAddon.value && terminalReady.value) {
@@ -643,10 +648,10 @@ const copySelectedText = () => {
   if (selectedText.value) {
     navigator.clipboard.writeText(selectedText.value)
       .then(() => {
-        console.log('Text copied to clipboard')
+        console.log(t('message.text_copied'))
       })
       .catch(err => {
-        console.error('Failed to copy text: ', err)
+        console.error(t('message.failed_to_copy'), err)
       })
   }
   closeContextMenu()
@@ -660,10 +665,35 @@ const pasteFromClipboard = () => {
       }
     })
     .catch(err => {
-      console.error('Failed to paste text: ', err)
+      console.error(t('message.failed_to_paste'), err)
     })
   closeContextMenu()
 }
+
+const handleKeydown = (e) => {
+  // Only process if terminal is focused
+  if (!terminal.value || !document.activeElement.closest('.terminal-container')) return
+  
+  // Ctrl+C or Command+C to copy
+  if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !e.shiftKey) {
+    const selection = terminal.value.getSelection()
+    if (selection) {
+      navigator.clipboard.writeText(selection)
+      e.preventDefault()
+    }
+  }
+  
+  // Ctrl+V or Command+V to paste
+  if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+    navigator.clipboard.readText()
+      .then(text => {
+        if (text && terminal.value) {
+          terminalStore.sendInput(text)
+        }})
+      e.preventDefault()
+    }
+  }
+
 
 onMounted(async () => {
   // Load session data
@@ -678,44 +708,40 @@ onMounted(async () => {
   window.addEventListener('resize', handleResize)
   
   // Add keyboard shortcuts for copy/paste
-  document.addEventListener('keydown', (e) => {
-    // Only process if terminal is focused
-    if (!terminal.value || !document.activeElement.closest('.terminal-container')) return
-    
-    // Ctrl+C or Command+C to copy
-    if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !e.shiftKey) {
-      const selection = terminal.value.getSelection()
-      if (selection) {
-        navigator.clipboard.writeText(selection)
-        e.preventDefault()
-      }
-    }
-    
-    // Ctrl+V or Command+V to paste
-    if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-      navigator.clipboard.readText()
-        .then(text => {
-          if (text && terminal.value) {
-            terminalStore.sendInput(text)
-          }
-        })
-      e.preventDefault()
-    }
-  })
+  document.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
   // Clean up
   window.removeEventListener('resize', handleResize)
   document.removeEventListener('click', closeContextMenu)
-  document.removeEventListener('keydown', null)
-  
-  if (terminal.value) {
-    terminal.value.dispose()
+  document.removeEventListener('keydown', handleKeydown)
+
+  // console.log('TerminalView: onUnmounted - Starting dispose operations.');
+
+  // Dispose of addons only if they were loaded
+  if (fitAddon.value) {
+    try { // Add try-catch for fitAddon
+      // console.log('TerminalView: Disposing fitAddon.');
+      fitAddon.value.dispose();
+      fitAddon.value = null; // Set to null after disposing
+    } catch (e) {
+      // console.error('TerminalView: Error disposing fitAddon:', e);
+    }
   }
   
-  // Disconnect from session
-  terminalStore.disconnectSession()
+  // Then dispose of the terminal
+  if (terminal.value) {
+    // console.log('TerminalView: Disposing terminal instance.');
+    terminal.value.dispose()
+    terminal.value = null; // Set to null after disposing
+  }
+  // console.log('TerminalView: onUnmounted - Dispose operations completed.');
+
+  // Force a page reload to ensure the HomeView renders correctly
+  // This is a workaround for unhandled errors during component unmount
+  // that might prevent Vue from updating the DOM.
+  window.location.reload();
 })
 </script>
 

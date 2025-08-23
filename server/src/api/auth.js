@@ -101,6 +101,15 @@ router.post('/login', loginLimiter, async (req, res) => {
     // Login user
     const result = await authService.loginUser(username.trim(), password);
 
+    if (result.requires2fa) {
+      return res.status(206).json({
+        success: true,
+        message: '2FA required.',
+        requires2fa: true,
+        user: result.user
+      });
+    }
+
     res.json({
       success: true,
       message: 'Login successful.',
@@ -118,6 +127,166 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     res.status(500).json({
       error: 'Internal server error during login.'
+    });
+  }
+});
+
+// @route   POST /api/auth/2fa/login
+// @desc    Login user with 2FA code
+// @access  Public
+router.post('/2fa/login', loginLimiter, async (req, res) => {
+  try {
+    const { userId, totpCode } = req.body;
+
+    if (!userId || !totpCode) {
+      return res.status(400).json({
+        error: 'User ID and 2FA code are required.'
+      });
+    }
+
+    const result = await authService.loginUserWith2fa(userId, totpCode);
+
+    res.json({
+      success: true,
+      message: '2FA login successful.',
+      token: result.token,
+      user: result.user
+    });
+  } catch (error) {
+    console.error('2FA Login error:', error.message);
+
+    if (error.message === 'Invalid 2FA code') {
+      return res.status(401).json({
+        error: 'Invalid 2FA code.'
+      });
+    }
+
+    res.status(500).json({
+      error: 'Internal server error during 2FA login.'
+    });
+  }
+});
+
+// @route   POST /api/auth/2fa/generate-secret
+// @desc    Generate a new TOTP secret for the authenticated user
+// @access  Private
+router.post('/2fa/generate-secret', authenticateToken, async (req, res) => {
+  try {
+    const { secret, otpauthUrl } = await authService.generateTotpSecret(req.user.id);
+
+    res.json({
+      success: true,
+      message: 'TOTP secret generated.',
+      secret,
+      otpauthUrl
+    });
+  } catch (error) {
+    console.error('Generate TOTP secret error:', error.message);
+    res.status(500).json({
+      error: 'Internal server error while generating TOTP secret.'
+    });
+  }
+});
+
+// @route   POST /api/auth/2fa/verify
+// @desc    Verify a TOTP code for the authenticated user
+// @access  Private
+router.post('/2fa/verify', authenticateToken, async (req, res) => {
+  try {
+    const { totpCode } = req.body;
+
+    if (!totpCode) {
+      return res.status(400).json({
+        error: '2FA code is required.'
+      });
+    }
+
+    const verified = await authService.verifyTotpCode(req.user.id, totpCode);
+
+    if (!verified) {
+      return res.status(401).json({
+        error: 'Invalid 2FA code.'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: '2FA code verified successfully.'
+    });
+  } catch (error) {
+    console.error('Verify TOTP code error:', error.message);
+    res.status(500).json({
+      error: 'Internal server error while verifying TOTP code.'
+    });
+  }
+});
+
+// @route   POST /api/auth/2fa/enable
+// @desc    Enable 2FA for the authenticated user
+// @access  Private
+router.post('/2fa/enable', authenticateToken, async (req, res) => {
+  try {
+    const { totpCode, secret } = req.body;
+
+    if (!totpCode || !secret) {
+      return res.status(400).json({
+        error: '2FA code and secret are required.'
+      });
+    }
+
+    const verified = await authService.verifyTotpCode(req.user.id, totpCode);
+
+    if (!verified) {
+      return res.status(401).json({
+        error: 'Invalid 2FA code.'
+      });
+    }
+
+    await authService.enable2fa(req.user.id, secret);
+
+    res.json({
+      success: true,
+      message: '2FA enabled successfully.'
+    });
+  } catch (error) {
+    console.error('Enable 2FA error:', error.message);
+    res.status(500).json({
+      error: 'Internal server error while enabling 2FA.'
+    });
+  }
+});
+
+// @route   POST /api/auth/2fa/disable
+// @desc    Disable 2FA for the authenticated user
+// @access  Private
+router.post('/2fa/disable', authenticateToken, async (req, res) => {
+  try {
+    const { totpCode } = req.body;
+
+    if (!totpCode) {
+      return res.status(400).json({
+        error: '2FA code is required.'
+      });
+    }
+
+    const verified = await authService.verifyTotpCode(req.user.id, totpCode);
+
+    if (!verified) {
+      return res.status(401).json({
+        error: 'Invalid 2FA code.'
+      });
+    }
+
+    await authService.disable2fa(req.user.id);
+
+    res.json({
+      success: true,
+      message: '2FA disabled successfully.'
+    });
+  } catch (error) {
+    console.error('Disable 2FA error:', error.message);
+    res.status(500).json({
+      error: 'Internal server error while disabling 2FA.'
     });
   }
 });

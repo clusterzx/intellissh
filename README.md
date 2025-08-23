@@ -2,8 +2,14 @@
 
 A secure and user-friendly web app for managing Linux servers with Artifical Intelligence via SSH—right from your browser + SFTP Browser in Terminal.
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![License](https://img.shields.io/badge/license-ISC-green)
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
+Support this project:<br>
+[![Patreon](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/c/clusterzx)
+[![PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/paypalme/bech0r)
+[![BuyMeACoffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/clusterzx)
+[![Ko-Fi](https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/clusterzx)
 
 ![preview](https://github.com/clusterzx/intellissh/blob/master/preview.gif)
 
@@ -34,6 +40,8 @@ IntelliSSH helps system administrators and developers access and control remote 
 ## 🔐 Key Features
 
 - **Authentication**: Secure login with JWT and bcrypt  
+- **Credential Management**: Securely manage credentials for SSH session connections.
+- **Two-Factor Authentication (TOTP)**: Enhance security with Time-based One-Time Password verification.
 - **SSH Sessions**: Create, edit, test, and connect  
 - **Terminal**: Full emulation, copy/paste, resize  
 - **AI Assistant**: Context-aware help and suggestions  
@@ -128,7 +136,7 @@ We welcome contributions! Please fork the repo, create a branch, and submit a PR
 
 ## 🛡️ License
 
-ISC License — see [LICENSE](./LICENSE) for details.
+MIT License — see [LICENSE](./LICENSE) for details.
 
 ---
 

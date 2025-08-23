@@ -12,9 +12,10 @@
         </h2>
         <div class="mt-3 flex justify-center items-center gap-2">
           <p class="text-center text-sm text-slate-600 dark:text-slate-400">
-            {{ isRegistering ? 'Create your account' : 'Sign in to your account' }}
+            {{ isRegistering ? $t('message.create_account') : $t('message.sign_in_to_account') }}
           </p>
           <DarkModeToggle />
+          <LanguageSwitcher />
         </div>
       </div>
       
@@ -22,7 +23,7 @@
         <form class="space-y-6" @submit.prevent="handleSubmit">
           <div class="space-y-4">
             <div>
-              <label for="username" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Username</label>
+              <label for="username" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ $t('message.username') }}</label>
               <input
                 id="username"
                 v-model="form.username"
@@ -31,11 +32,11 @@
                 required
                 class="form-input w-full"
                 :class="{ 'border-red-300 dark:border-red-500': errors.username }"
-                placeholder="Enter your username"
+                :placeholder="$t('message.enter_username')"
               />
             </div>
             <div>
-              <label for="password" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password</label>
+              <label for="password" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ $t('message.password') }}</label>
               <input
                 id="password"
                 v-model="form.password"
@@ -44,11 +45,11 @@
                 required
                 class="form-input w-full"
                 :class="{ 'border-red-300 dark:border-red-500': errors.password }"
-                placeholder="Enter your password"
+                :placeholder="$t('message.enter_password')"
               />
             </div>
             <div v-if="isRegistering">
-              <label for="confirmPassword" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Confirm Password</label>
+              <label for="confirmPassword" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ $t('message.confirm_password') }}</label>
               <input
                 id="confirmPassword"
                 v-model="form.confirmPassword"
@@ -57,7 +58,19 @@
                 required
                 class="form-input w-full"
                 :class="{ 'border-red-300 dark:border-red-500': errors.confirmPassword }"
-                placeholder="Confirm your password"
+                :placeholder="$t('message.confirm_password_placeholder')"
+              />
+            </div>
+            <div v-if="requires2fa">
+              <label for="totpCode" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{{ $t('message.2fa_code') }}</label>
+              <input
+                id="totpCode"
+                v-model="totpCode"
+                name="totpCode"
+                type="text"
+                required
+                class="form-input w-full"
+                :placeholder="$t('message.enter_2fa_code')"
               />
             </div>
           </div>
@@ -72,7 +85,7 @@
               </div>
               <div class="ml-3">
                 <h3 class="text-sm font-medium text-red-800 dark:text-red-300">
-                  {{ allErrors.length > 1 ? 'Please fix the following errors:' : 'Error:' }}
+                  {{ allErrors.length > 1 ? $t('message.fix_errors') : $t('message.error') }}
                 </h3>
                 <div class="mt-2 text-sm text-red-700 dark:text-red-200">
                   <ul class="list-disc pl-5 space-y-1">
@@ -90,7 +103,7 @@
               class="btn-primary w-full py-2.5 justify-center"
             >
               <span v-if="loading" class="spinner mr-2"></span>
-              {{ isRegistering ? 'Create Account' : 'Sign in' }}
+              {{ requires2fa ? $t('message.verify_sign_in') : (isRegistering ? $t('message.create_account_btn') : $t('message.sign_in_btn')) }}
             </button>
           </div>
 
@@ -100,14 +113,14 @@
               @click="toggleMode"
               class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300"
             >
-              {{ isRegistering ? 'Already have an account? Sign in' : "Don't have an account? Sign up" }}
+              {{ isRegistering ? $t('message.already_have_account') : $t('message.dont_have_account') }}
             </button>
             <div v-if="!isRegistering">
               <router-link 
                 to="/forgot-password" 
                 class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300"
               >
-                Forgot your password?
+                {{ $t('message.forgot_password') }}
               </router-link>
             </div>
           </div>
@@ -116,7 +129,7 @@
       
       <!-- Security Note -->
       <div class="text-center text-xs text-slate-500 dark:text-slate-500 mt-8">
-        <p>Secure connection • All data is encrypted</p>
+        <p>{{ $t('message.secure_connection_encrypted') }}</p>
       </div>
     </div>
   </div>
@@ -127,15 +140,19 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+import { useI18n } from 'vue-i18n'
 
 // Stores and router
 const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 
 // State
 const isRegistering = ref(false)
 const loading = ref(false)
+const totpCode = ref('')
 const form = ref({
   username: '',
   password: '',
@@ -144,11 +161,12 @@ const form = ref({
 const errors = ref({})
 
 // Computed
+const requires2fa = computed(() => authStore.getRequires2fa)
 const hasErrors = computed(() => Object.keys(errors.value).length > 0 || authStore.authError)
 const allErrors = computed(() => {
-  const errorList = Object.values(errors.value).flat()
+  const errorList = Object.values(errors.value).map(key => t(`message.${key}`))
   if (authStore.authError) {
-    errorList.push(authStore.authError)
+    errorList.push(t(authStore.authError))
   }
   return errorList
 })
@@ -158,22 +176,22 @@ const validateForm = () => {
   errors.value = {}
   
   if (!form.value.username.trim()) {
-    errors.value.username = 'Username is required'
+    errors.value.username = 'username_required'
   } else if (form.value.username.length < 3) {
-    errors.value.username = 'Username must be at least 3 characters'
+    errors.value.username = 'username_min_length'
   }
   
   if (!form.value.password) {
-    errors.value.password = 'Password is required'
+    errors.value.password = 'password_required'
   } else if (form.value.password.length < 6) {
-    errors.value.password = 'Password must be at least 6 characters'
+    errors.value.password = 'password_min_length'
   }
   
   if (isRegistering.value) {
     if (!form.value.confirmPassword) {
-      errors.value.confirmPassword = 'Please confirm your password'
+      errors.value.confirmPassword = 'confirm_password_required'
     } else if (form.value.password !== form.value.confirmPassword) {
-      errors.value.confirmPassword = 'Passwords do not match'
+      errors.value.confirmPassword = 'passwords_do_not_match'
     }
   }
   
@@ -206,6 +224,16 @@ const handleSubmit = async () => {
         const redirect = route.query.redirect || '/'
         router.push(redirect)
       }
+    } else if (requires2fa.value) {
+      // Handle 2FA login
+      const result = await authStore.loginWith2fa(
+        authStore.getTempUserFor2fa.id,
+        totpCode.value
+      )
+      if (result.success) {
+        const redirect = route.query.redirect || '/'
+        router.push(redirect)
+      }
     } else {
       const result = await authStore.login({
         username: form.value.username.trim(),
@@ -222,6 +250,7 @@ const handleSubmit = async () => {
     console.error('Authentication error:', error)
   } finally {
     loading.value = false
+    totpCode.value = '' // Clear 2FA code after attempt
   }
 }
 
@@ -229,6 +258,8 @@ const toggleMode = () => {
   isRegistering.value = !isRegistering.value
   errors.value = {}
   authStore.clearError()
+  authStore.requires2fa = false // Clear 2FA state
+  authStore.tempUserFor2fa = null // Clear temp user
   form.value.confirmPassword = ''
 }
 
