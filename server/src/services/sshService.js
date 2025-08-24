@@ -10,9 +10,33 @@ class SSHService extends EventEmitter {
     this.shells = new Map();
   }
 
-  async connect(sessionData, socket) {
+  async connect(sessionData, socket, reuseExisting = true) {
     const { id, hostname, port, username, password, privateKey } = sessionData;
+    const userId = socket.userId;
+    const sessionConnectionId = `user_${userId}_session_${id}`;
     const connectionId = `${socket.id}_${id}`;
+
+    // Check if we have an existing persistent connection for this user and session
+    if (reuseExisting) {
+      const existingConnection = this.connections.get(sessionConnectionId);
+      if (existingConnection && existingConnection.connected) {
+        console.log(`Reusing existing SSH connection: ${sessionConnectionId}`);
+        
+        // Update socket reference
+        existingConnection.sockets = existingConnection.sockets || new Set();
+        existingConnection.sockets.add(socket);
+        
+        // Set up stream handlers for this socket
+        this.setupStreamHandlers(sessionConnectionId, existingConnection.stream, socket);
+        
+        // Send buffered terminal output to reconnecting client
+        if (existingConnection.terminalBuffer) {
+          socket.emit('terminal-output', existingConnection.terminalBuffer);
+        }
+        
+        return sessionConnectionId;
+      }
+    }
 
     try {
       console.log(`Attempting SSH connection to ${username}@${hostname}:${port}`);
@@ -41,38 +65,41 @@ class SSHService extends EventEmitter {
               return;
             }
 
-            // Store connection and stream
-            this.connections.set(connectionId, {
+            // Store persistent connection with session ID as key
+            this.connections.set(sessionConnectionId, {
               client: conn,
               stream: stream,
-              socket: socket,
+              sockets: new Set([socket]),
               sessionData: sessionData,
               connected: true,
-              lastActivity: Date.now()
+              lastActivity: Date.now(),
+              userId: userId,
+              sessionId: id,
+              persistent: true
             });
 
             // Set up stream event handlers
-            this.setupStreamHandlers(connectionId, stream, socket);
+            this.setupStreamHandlers(sessionConnectionId, stream, socket);
             
-            resolve(connectionId);
+            resolve(sessionConnectionId);
           });
         });
 
         conn.on('error', (err) => {
           clearTimeout(connectionTimeout);
-          console.error(`SSH connection error for ${connectionId}:`, err.message);
-          this.cleanup(connectionId);
+          console.error(`SSH connection error for ${sessionConnectionId}:`, err.message);
+          this.cleanup(sessionConnectionId);
           reject(err);
         });
 
         conn.on('end', () => {
-          console.log(`SSH connection ended: ${connectionId}`);
-          this.cleanup(connectionId);
+          console.log(`SSH connection ended: ${sessionConnectionId}`);
+          this.cleanup(sessionConnectionId);
         });
 
         conn.on('close', () => {
-          console.log(`SSH connection closed: ${connectionId}`);
-          this.cleanup(connectionId);
+          console.log(`SSH connection closed: ${sessionConnectionId}`);
+          this.cleanup(sessionConnectionId);
         });
 
         // Prepare connection options
@@ -103,8 +130,8 @@ class SSHService extends EventEmitter {
         conn.connect(connectOptions);
       });
     } catch (error) {
-      console.error(`SSH service error for ${connectionId}:`, error.message);
-      this.cleanup(connectionId);
+      console.error(`SSH service error for ${sessionConnectionId}:`, error.message);
+      this.cleanup(sessionConnectionId);
       throw error;
     }
   }
@@ -128,7 +155,18 @@ class SSHService extends EventEmitter {
     stream.on('data', async (data) => {
       try {
         const output = data.toString();
-        socket.emit('terminal-output', output);
+        
+        // Emit to all connected sockets for this session
+        if (connection.sockets) {
+          connection.sockets.forEach(s => {
+            if (s.connected) {
+              s.emit('terminal-output', output);
+            }
+          });
+        } else {
+          socket.emit('terminal-output', output);
+        }
+        
         connection.lastActivity = Date.now();
         
         // Store some terminal output for context
@@ -240,7 +278,17 @@ class SSHService extends EventEmitter {
     // Handle stream close
     stream.on('close', (code, signal) => {
       console.log(`SSH stream closed for ${connectionId}, code: ${code}, signal: ${signal}`);
-      socket.emit('terminal-disconnected', { code, signal });
+      
+      // Notify all connected sockets
+      if (connection.sockets) {
+        connection.sockets.forEach(s => {
+          if (s.connected) {
+            s.emit('terminal-disconnected', { code, signal });
+          }
+        });
+      } else {
+        socket.emit('terminal-disconnected', { code, signal });
+      }
       
       // Clean up LLM resources
       if (connection.llmHelperEnabled) {
@@ -253,7 +301,18 @@ class SSHService extends EventEmitter {
     // Handle stream errors
     stream.on('error', (err) => {
       console.error(`SSH stream error for ${connectionId}:`, err.message);
-      socket.emit('terminal-error', { message: err.message });
+      
+      // Notify all connected sockets
+      if (connection.sockets) {
+        connection.sockets.forEach(s => {
+          if (s.connected) {
+            s.emit('terminal-error', { message: err.message });
+          }
+        });
+      } else {
+        socket.emit('terminal-error', { message: err.message });
+      }
+      
       this.cleanup(connectionId);
     });
 
@@ -460,15 +519,32 @@ class SSHService extends EventEmitter {
     // Handle socket disconnect
     socket.on('disconnect', () => {
       console.log(`Socket disconnected for ${connectionId}`);
-      this.disconnect(connectionId);
+      
+      // Remove this socket from the connection's socket set
+      if (connection.sockets) {
+        connection.sockets.delete(socket);
+        
+        // Only disconnect SSH if no more sockets are connected
+        if (connection.sockets.size === 0 && !connection.persistent) {
+          this.disconnect(connectionId);
+        }
+      } else {
+        this.disconnect(connectionId);
+      }
     });
   }
 
-  disconnect(connectionId) {
+  disconnect(connectionId, forceClose = false) {
     const connection = this.connections.get(connectionId);
     if (!connection) return false;
 
     try {
+      // For persistent connections, only close if forced or no sockets remain
+      if (connection.persistent && !forceClose && connection.sockets && connection.sockets.size > 0) {
+        console.log(`Keeping persistent SSH connection alive: ${connectionId}`);
+        return false;
+      }
+      
       console.log(`Disconnecting SSH connection: ${connectionId}`);
       
       if (connection.stream) {
@@ -494,7 +570,14 @@ class SSHService extends EventEmitter {
       connection.connected = false;
       
       try {
-        if (connection.socket) {
+        // Notify all connected sockets
+        if (connection.sockets) {
+          connection.sockets.forEach(socket => {
+            if (socket.connected) {
+              socket.emit('terminal-disconnected');
+            }
+          });
+        } else if (connection.socket) {
           connection.socket.emit('terminal-disconnected');
         }
       } catch (error) {
@@ -591,6 +674,52 @@ class SSHService extends EventEmitter {
 
       conn.connect(connectOptions);
     });
+  }
+
+  // Get persistent connections for a user
+  getUserConnections(userId) {
+    const userConnections = [];
+    for (const [id, conn] of this.connections) {
+      if (conn.userId === userId && conn.persistent && conn.connected) {
+        userConnections.push({
+          connectionId: id,
+          sessionId: conn.sessionId,
+          hostname: conn.sessionData.hostname,
+          username: conn.sessionData.username,
+          connected: conn.connected,
+          lastActivity: conn.lastActivity,
+          socketCount: conn.sockets ? conn.sockets.size : 0
+        });
+      }
+    }
+    return userConnections;
+  }
+
+  // Attach a socket to an existing connection
+  attachSocketToConnection(connectionId, socket) {
+    const connection = this.connections.get(connectionId);
+    if (!connection || !connection.connected) {
+      return false;
+    }
+    
+    // Add socket to the connection's socket set
+    if (!connection.sockets) {
+      connection.sockets = new Set();
+    }
+    connection.sockets.add(socket);
+    
+    // Set up stream handlers for this socket
+    this.setupStreamHandlers(connectionId, connection.stream, socket);
+    
+    // Send buffered terminal output to the new socket
+    if (connection.terminalBuffer) {
+      socket.emit('terminal-restore', { 
+        buffer: connection.terminalBuffer,
+        sessionId: connection.sessionId 
+      });
+    }
+    
+    return true;
   }
 
   // Get connection statistics

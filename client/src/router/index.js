@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/authStore'
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
 import TerminalView from '@/views/TerminalView.vue'
+import MultiTerminalView from '@/views/MultiTerminalView.vue'
 import SshDebugView from '@/views/SshDebugView.vue'
 import SettingsView from '@/views/SettingsView.vue'
 import ProfileView from '@/views/ProfileView.vue'
@@ -36,6 +37,12 @@ const routes = [
     path: '/terminal',
     name: 'terminal-new',
     component: TerminalView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/terminals',
+    name: 'multi-terminal',
+    component: MultiTerminalView,
     meta: { requiresAuth: true }
   },
   {

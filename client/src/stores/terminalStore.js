@@ -12,7 +12,6 @@ export const useTerminalStore = defineStore('terminal', () => {
   const activeSession = ref(null)
   const terminalOutput = ref('')
   const connectionId = ref(null)
-  const persistedSessions = ref({}); // New state for persisted sessions
   
   // SFTP state
   const sftpConnected = ref(false)
@@ -28,7 +27,6 @@ export const useTerminalStore = defineStore('terminal', () => {
   const connecting = computed(() => isConnecting.value)
   const hasActiveSession = computed(() => !!activeSession.value)
   const error = computed(() => connectionError.value)
-  const getPersistedSessions = computed(() => persistedSessions.value);
   
   // SFTP getters
   const hasSftpConnection = computed(() => sftpConnected.value)
@@ -101,13 +99,7 @@ export const useTerminalStore = defineStore('terminal', () => {
     })
   }
 
-  const connectToSession = async (sessionId) => {
-    // Check if session is already persisted
-    if (persistedSessions.value[sessionId]) {
-      console.log(`Reattaching to persisted session: ${sessionId}`);
-      return reattachToSession(sessionId);
-    }
-
+  const connectToSession = async (sessionId, reuseExisting = true) => {
     if (!socket.value?.connected) {
       throw new Error('Socket not connected')
     }
@@ -116,7 +108,7 @@ export const useTerminalStore = defineStore('terminal', () => {
     connectionError.value = null
 
     return new Promise((resolve, reject) => {
-      socket.value.emit('connect-session', { sessionId })
+      socket.value.emit('connect-session', { sessionId, reuseExisting })
 
       const handleConnectionEstablished = (data) => {
         console.log('SSH connection established:', data)
@@ -158,48 +150,20 @@ export const useTerminalStore = defineStore('terminal', () => {
     })
   }
 
-  const disconnectSession = () => {
-    if (!socket.value || !activeSession.value) {
-      return Promise.resolve(); // Already disconnected or no active session
+  const disconnectSession = (forceClose = false) => {
+    if (!socket.value) {
+      return Promise.resolve();
     }
 
-    return new Promise((resolve, reject) => {
-      const sessionIdToDisconnect = activeSession.value.id;
-      console.log(`Attempting to disconnect session ${sessionIdToDisconnect}`);
-
-      const handleDisconnected = (data) => {
-        if (data.sessionId === sessionIdToDisconnect) {
-          console.log(`Session ${sessionIdToDisconnect} disconnected confirmed by server.`);
-          delete persistedSessions.value[sessionIdToDisconnect]; // Remove from persisted
-          cleanupListeners();
-          resolve();
-        }
-      };
-
-      const handleError = (error) => {
-        console.error(`Error disconnecting session ${sessionIdToDisconnect}:`, error);
-        cleanupListeners();
-        reject(new Error(error.message || 'Failed to disconnect session'));
-      };
-
-      const cleanupListeners = () => {
-        socket.value.off('terminal-disconnected', handleDisconnected);
-        socket.value.off('terminal-error', handleError);
-      };
-
-      socket.value.on('terminal-disconnected', handleDisconnected);
-      socket.value.on('terminal-error', handleError);
-
-      socket.value.emit('disconnect-session');
-
-      // Timeout after 10 seconds
-      setTimeout(() => {
-        if (activeSession.value && activeSession.value.id === sessionIdToDisconnect) {
-          console.warn(`Timeout waiting for session ${sessionIdToDisconnect} disconnection confirmation.`);
-          cleanupListeners();
-          reject(new Error('Session disconnection timeout'));
-        }
-      }, 10000);
+    return new Promise((resolve) => {
+      socket.value.emit('disconnect-session', { forceClose });
+      
+      if (forceClose) {
+        activeSession.value = null;
+        connectionId.value = null;
+      }
+      
+      resolve();
     });
   }
 
@@ -258,8 +222,6 @@ export const useTerminalStore = defineStore('terminal', () => {
   }
 
   const resetTerminalState = () => {
-    // Do NOT disconnect socket here. Socket disconnection is handled by disconnectSession.
-    isConnected.value = false
     isConnecting.value = false
     activeSession.value = null
     connectionId.value = null
@@ -273,60 +235,58 @@ export const useTerminalStore = defineStore('terminal', () => {
     }
   }
 
-  const persistSession = () => {
-    if (activeSession.value) {
-      persistedSessions.value[activeSession.value.id] = activeSession.value;
-      activeSession.value = null; // Clear active session
-      connectionId.value = null;
-      console.log(`Session ${activeSession.value.id} persisted.`);
+  const getUserConnections = async () => {
+    if (!socket.value?.connected) {
+      return [];
     }
+    
+    return new Promise((resolve) => {
+      socket.value.emit('get-user-connections');
+      
+      const handleConnections = (data) => {
+        socket.value.off('user-connections', handleConnections);
+        resolve(data.connections || []);
+      };
+      
+      socket.value.on('user-connections', handleConnections);
+      
+      // Timeout after 5 seconds
+      setTimeout(() => {
+        socket.value.off('user-connections', handleConnections);
+        resolve([]);
+      }, 5000);
+    });
   };
 
-  const reattachToSession = async (sessionId) => {
+  const attachToConnection = async (connectionId) => {
     if (!socket.value?.connected) {
-      await init(); // Ensure socket is connected and authenticated
+      throw new Error('Socket not connected');
     }
-
-    isConnecting.value = true;
-    connectionError.value = null;
-
+    
     return new Promise((resolve, reject) => {
-      socket.value.emit('reattach-session', { sessionId });
-
-      const handleReattachEstablished = (data) => {
-        console.log('SSH reattachment established:', data);
-        activeSession.value = data.session;
-        connectionId.value = data.connectionId;
-        isConnecting.value = false;
-        delete persistedSessions.value[sessionId]; // Remove from persisted
-        cleanupListeners();
+      socket.value.emit('attach-to-connection', { connectionId });
+      
+      const handleAttached = (data) => {
+        socket.value.off('attached-to-connection', handleAttached);
+        socket.value.off('attach-error', handleError);
         resolve(data);
       };
-
-      const handleReattachError = (error) => {
-        console.error('SSH reattachment error:', error);
-        connectionError.value = error.message;
-        isConnecting.value = false;
-        cleanupListeners();
+      
+      const handleError = (error) => {
+        socket.value.off('attached-to-connection', handleAttached);
+        socket.value.off('attach-error', handleError);
         reject(new Error(error.message));
       };
-
-      const cleanupListeners = () => {
-        socket.value.off('reattach-established', handleReattachEstablished);
-        socket.value.off('reattach-error', handleReattachError);
-      };
-
-      socket.value.on('reattach-established', handleReattachEstablished);
-      socket.value.on('reattach-error', handleReattachError);
-
-      // Timeout after 30 seconds
+      
+      socket.value.on('attached-to-connection', handleAttached);
+      socket.value.on('attach-error', handleError);
+      
+      // Timeout after 10 seconds
       setTimeout(() => {
-        if (isConnecting.value) {
-          isConnecting.value = false;
-          cleanupListeners();
-          reject(new Error('Reattachment timeout'));
-        }
-      }, 30000);
+        socket.value.off('attached-to-connection', handleAttached);
+        socket.value.off('attach-error', handleError);
+        reject(new Error('Attachment timeout'));
+      }, 10000);
     });
   };
 
@@ -765,7 +725,6 @@ export const useTerminalStore = defineStore('terminal', () => {
     activeSession,
     terminalOutput,
     connectionId,
-    persistedSessions, // Export new state
     
     // SFTP state
     sftpConnected,
@@ -781,7 +740,6 @@ export const useTerminalStore = defineStore('terminal', () => {
     connecting,
     hasActiveSession,
     error,
-    getPersistedSessions, // Export new getter
     
     // SFTP getters
     hasSftpConnection,
@@ -805,8 +763,8 @@ export const useTerminalStore = defineStore('terminal', () => {
     disconnectAll,
     ping,
     init,
-    persistSession, // Export new action
-    reattachToSession, // Export new action
+    getUserConnections,
+    attachToConnection,
     
     // SFTP actions
     connectToSftp,

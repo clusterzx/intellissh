@@ -156,10 +156,12 @@ const handleSocketConnection = (io) => {
     });
 
     // Handle disconnect SSH session
-    socket.on('disconnect-session', () => {
+    socket.on('disconnect-session', (data) => {
+      const forceClose = data && data.forceClose;
+      
       if (socket.connectionId) {
-        console.log(`Disconnecting SSH session: ${socket.connectionId}`);
-        sshService.disconnect(socket.connectionId);
+        console.log(`Disconnecting SSH session: ${socket.connectionId}, force: ${forceClose}`);
+        sshService.disconnect(socket.connectionId, forceClose);
         socket.connectionId = null;
         socket.sessionId = null;
       }
@@ -185,9 +187,16 @@ const handleSocketConnection = (io) => {
     socket.on('disconnect', (reason) => {
       console.log(`Socket ${socket.id} disconnected: ${reason}`);
       
-      if (socket.connectionId) {
-        console.log(`Cleaning up SSH connection: ${socket.connectionId}`);
-        sshService.disconnect(socket.connectionId);
+      // Don't immediately disconnect SSH if it's a persistent connection
+      // The connection will remain alive for reconnection
+      if (socket.connectionId && reason !== 'client namespace disconnect') {
+        const connection = sshService.getConnection(socket.connectionId);
+        if (connection && connection.persistent) {
+          console.log(`Keeping persistent SSH connection alive: ${socket.connectionId}`);
+        } else {
+          console.log(`Cleaning up SSH connection: ${socket.connectionId}`);
+          sshService.disconnect(socket.connectionId);
+        }
       }
       
       if (socket.sftpConnectionId) {
@@ -210,6 +219,35 @@ const handleSocketConnection = (io) => {
         connectionId: socket.connectionId,
         sessionId: socket.sessionId
       });
+    });
+
+    // Get all user's persistent connections
+    socket.on('get-user-connections', () => {
+      if (!socket.authenticated) {
+        socket.emit('user-connections', { connections: [] });
+        return;
+      }
+
+      const connections = sshService.getUserConnections(socket.userId);
+      socket.emit('user-connections', { connections });
+    });
+
+    // Attach to an existing connection
+    socket.on('attach-to-connection', (data) => {
+      if (!socket.authenticated) {
+        socket.emit('attach-error', { message: 'Not authenticated' });
+        return;
+      }
+
+      const { connectionId } = data;
+      const success = sshService.attachSocketToConnection(connectionId, socket);
+      
+      if (success) {
+        socket.connectionId = connectionId;
+        socket.emit('attached-to-connection', { connectionId, success: true });
+      } else {
+        socket.emit('attach-error', { message: 'Failed to attach to connection' });
+      }
     });
 
     // Handle ping/pong for keepalive

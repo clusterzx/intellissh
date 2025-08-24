@@ -9,6 +9,16 @@
           </div>
           <div class="flex space-x-3">
             <router-link
+              to="/terminals"
+              class="btn-outline flex items-center"
+              title="Multi-Tab Terminal"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Multi-Tab
+            </router-link>
+            <router-link
               to="/debug"
               class="btn-outline flex items-center"
               title="SSH Debug Tool"
@@ -207,14 +217,25 @@
               </div>
             </div>
             <div class="card-footer">
-              <button
-                @click="connectToSession(session)"
-                :disabled="connectingToSession === session.id"
-                class="w-full btn-primary"
-              >
-                <span v-if="connectingToSession === session.id" class="spinner mr-2"></span>
-                {{ connectingToSession === session.id ? $t('message.connecting') : $t('message.connect') }}
-              </button>
+              <div class="flex space-x-2">
+                <button
+                  @click="connectToSession(session)"
+                  :disabled="connectingToSession === session.id"
+                  class="flex-1 btn-primary"
+                >
+                  <span v-if="connectingToSession === session.id" class="spinner mr-2"></span>
+                  {{ connectingToSession === session.id ? $t('message.connecting') : $t('message.connect') }}
+                </button>
+                <button
+                  @click="openInMultiTab(session)"
+                  class="btn-outline px-3"
+                  title="Open in Multi-Tab"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -385,24 +406,22 @@ const connectToSession = async (session) => {
   connectingToSession.value = session.id;
   
   try {
-    if (terminalStore.getPersistedSessions[session.id]) {
-      console.log(t('message.attempting_reattach_session') + `${session.id}`);
-      await terminalStore.reattachToSession(session.id);
-    } else {
-      console.log(t('message.attempting_connect_new_session') + `${session.id}`);
-      // The actual connection logic is now handled by connectToSession in terminalStore
-      // which will either connect or reattach based on persisted state.
-    }
     router.push(`/terminal/${session.id}`);
   } catch (error) {
-    console.error(t('message.failed_to_connect_reattach_session'), error);
+    console.error(t('message.failed_to_connect_session'), error);
     connectingToSession.value = null;
   }
 };
 
+const openInMultiTab = (session) => {
+  // Store the session to open in localStorage
+  localStorage.setItem('openSessionInTab', JSON.stringify(session));
+  // Navigate to multi-terminal view
+  router.push('/terminals');
+};
+
 const isSessionConnected = (sessionId) => {
-  return (terminalStore.hasActiveSession && terminalStore.activeSession?.id === sessionId) ||
-         (terminalStore.getPersistedSessions[sessionId] !== undefined);
+  return terminalStore.hasActiveSession && terminalStore.activeSession?.id === sessionId;
 }
 
 const closeModal = () => {
