@@ -120,6 +120,7 @@ export const useTerminalStore = defineStore('terminal', () => {
         socket.value.off('connection-established', handleConnectionEstablished)
         socket.value.off('connection-error', handleConnectionError)
         
+        console.log('Terminal store updated - activeSession:', activeSession.value?.name, 'connectionId:', connectionId.value)
         resolve(data)
       }
 

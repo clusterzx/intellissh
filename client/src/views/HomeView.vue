@@ -9,16 +9,6 @@
           </div>
           <div class="flex space-x-3">
             <router-link
-              to="/terminals"
-              class="btn-outline flex items-center"
-              title="Multi-Tab Terminal"
-            >
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Multi-Tab
-            </router-link>
-            <router-link
               to="/debug"
               class="btn-outline flex items-center"
               title="SSH Debug Tool"
@@ -218,11 +208,11 @@
             </div>
             <div class="card-footer">
               <!-- Active Connection Actions -->
-              <div v-if="hasActiveConnection(session.id)" class="flex space-x-2">
+              <div v-if="hasActiveConnection(session.id)">
                 <button
                   @click="rejoinSession(session)"
                   :disabled="connectingToSession === session.id"
-                  class="flex-1 btn-primary bg-green-600 hover:bg-green-700 border-green-600"
+                  class="w-full btn-primary bg-green-600 hover:bg-green-700 border-green-600"
                 >
                   <span v-if="connectingToSession === session.id" class="spinner mr-2"></span>
                   <svg v-else class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -230,35 +220,17 @@
                   </svg>
                   {{ connectingToSession === session.id ? $t('message.rejoining') : $t('message.rejoin_active') }}
                 </button>
-                <button
-                  @click="openInMultiTab(session)"
-                  class="btn-outline px-3"
-                  title="Open in Multi-Tab"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </button>
               </div>
               
               <!-- New Connection Actions -->
-              <div v-else class="flex space-x-2">
+              <div v-else>
                 <button
                   @click="connectToSession(session)"
                   :disabled="connectingToSession === session.id"
-                  class="flex-1 btn-primary"
+                  class="w-full btn-primary"
                 >
                   <span v-if="connectingToSession === session.id" class="spinner mr-2"></span>
                   {{ connectingToSession === session.id ? $t('message.connecting') : $t('message.connect') }}
-                </button>
-                <button
-                  @click="openInMultiTab(session)"
-                  class="btn-outline px-3"
-                  title="Open in Multi-Tab"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
                 </button>
               </div>
             </div>
@@ -433,19 +405,16 @@ const connectToSession = async (session) => {
   connectingToSession.value = session.id;
   
   try {
-    router.push(`/terminal/${session.id}`);
+    // Always open in tabbed view for better UX
+    localStorage.setItem('openSessionInTab', JSON.stringify(session));
+    router.push('/terminals');
   } catch (error) {
     console.error(t('message.failed_to_connect_session'), error);
     connectingToSession.value = null;
   }
 };
 
-const openInMultiTab = (session) => {
-  // Store the session to open in localStorage
-  localStorage.setItem('openSessionInTab', JSON.stringify(session));
-  // Navigate to multi-terminal view
-  router.push('/terminals');
-};
+// Removed openInMultiTab - Connect button now always opens tabbed view
 
 // Removed isSessionConnected - now using hasActiveConnection with server-side active connections
 
@@ -564,12 +533,13 @@ const rejoinSession = async (session) => {
   
   connectingToSession.value = session.id
   try {
+    console.log('Rejoining active session:', session.name, 'with connectionId:', connectionInfo.connectionId)
     // Store the session to rejoin
     localStorage.setItem('rejoinSession', JSON.stringify({
       session: session,
       connectionId: connectionInfo.connectionId
     }))
-    // Navigate to multi-terminal view
+    // Navigate to tabbed terminal view
     router.push('/terminals')
   } catch (error) {
     console.error('Failed to rejoin session:', error)

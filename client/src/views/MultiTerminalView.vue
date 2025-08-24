@@ -346,6 +346,12 @@ const connectTab = async (tab) => {
       await initializeTabTerminal(tab)
     }
     
+    // Set up terminal listeners BEFORE connecting
+    if (tab.terminal) {
+      setupTerminalEventHandlers(tab)
+      terminalStore.setupTerminalListeners(tab.terminal)
+    }
+    
     // Check for existing connections for this session
     console.log('Checking for existing connections')
     const existingConnections = await terminalStore.getUserConnections()
@@ -354,26 +360,29 @@ const connectTab = async (tab) => {
     if (existingConnection) {
       console.log('Found existing connection:', existingConnection.connectionId)
       // Attach to existing connection
-      await terminalStore.attachToConnection(existingConnection.connectionId)
+      const result = await terminalStore.attachToConnection(existingConnection.connectionId)
       tabsStore.updateTabConnection(tab.id, {
         connectionId: existingConnection.connectionId,
         isConnected: true,
         isConnecting: false
       })
+      
+      // Update terminal store state
+      if (result.session) {
+        terminalStore.activeSession = result.session
+        terminalStore.connectionId = existingConnection.connectionId
+      }
     } else {
       console.log('Creating new connection for session:', tab.sessionId)
       // Create new connection
-      await terminalStore.connectToSession(tab.sessionId, true)
+      const result = await terminalStore.connectToSession(tab.sessionId, true)
       tabsStore.updateTabConnection(tab.id, {
         connectionId: terminalStore.connectionId,
         isConnected: true,
         isConnecting: false
       })
-    }
-    
-    // Set up terminal listeners for this tab
-    if (tab.terminal) {
-      setupTerminalEventHandlers(tab)
+      
+      console.log('New connection created:', terminalStore.connectionId)
     }
     
     // Focus terminal
