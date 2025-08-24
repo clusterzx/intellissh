@@ -10,6 +10,7 @@ const path = require('path');
 // Import services and middleware
 const db = require('./db/database');
 const { runMigration } = require('./db/migration');
+const extractRealIp = require('./middleware/ipMiddleware');
 
 // Load routes
 const authRoutes = require('./api/auth');
@@ -24,6 +25,9 @@ const { handleAuthError } = require('./middleware/authMiddleware');
 // Initialize Express app
 const app = express();
 const server = http.createServer(app);
+
+// Configure Express to trust proxy headers
+app.set('trust proxy', true);
 
 // Initialize Socket.IO with permissive CORS for LAN compatibility
 const io = socketIo(server, {
@@ -91,10 +95,13 @@ const generalLimiter = rateLimit({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// IP extraction middleware
+app.use(extractRealIp);
+
 // Request logging middleware
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
-  console.log(`${timestamp} ${req.method} ${req.path} - ${req.ip}`);
+  console.log(`${timestamp} ${req.method} ${req.path} - ${req.realIp || req.ip}`);
   
   // Add response header logging
   const originalSend = res.send;
