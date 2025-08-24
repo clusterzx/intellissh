@@ -235,11 +235,30 @@ const handleSocketConnection = (io) => {
       }
 
       const { connectionId } = data;
+      const connection = sshService.getConnection(connectionId);
+      
+      if (!connection) {
+        socket.emit('attach-error', { message: 'Connection not found' });
+        return;
+      }
+      
       const success = sshService.attachSocketToConnection(connectionId, socket);
       
       if (success) {
         socket.connectionId = connectionId;
-        socket.emit('attached-to-connection', { connectionId, success: true });
+        socket.sessionId = connection.sessionId;
+        
+        socket.emit('attached-to-connection', { 
+          connectionId, 
+          success: true,
+          session: {
+            id: connection.sessionData.id,
+            name: connection.sessionData.name,
+            hostname: connection.sessionData.hostname,
+            username: connection.sessionData.username,
+            port: connection.sessionData.port
+          }
+        });
       } else {
         socket.emit('attach-error', { message: 'Failed to attach to connection' });
       }

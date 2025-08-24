@@ -218,9 +218,16 @@ export const useTerminalStore = defineStore('terminal', () => {
     
     // Handle terminal restore (for reconnecting to existing sessions)
     const handleTerminalRestore = (data) => {
-      console.log('Restoring terminal buffer:', data)
+      console.log('Restoring terminal buffer:', data?.buffer?.length || 0, 'characters')
       if (terminal && typeof terminal.write === 'function' && data.buffer) {
+        // Clear existing terminal content first
+        terminal.reset()
+        // Write the restored buffer
         terminal.write(data.buffer)
+        terminalOutput.value += data.buffer
+        console.log('Terminal buffer restored successfully')
+      } else {
+        console.warn('Cannot restore terminal buffer - terminal not ready or no buffer data')
       }
     }
     
@@ -296,6 +303,12 @@ export const useTerminalStore = defineStore('terminal', () => {
       
       const handleAttached = (data) => {
         console.log('Attached to connection:', data);
+        
+        // Update terminal store state
+        if (data.session) {
+          activeSession.value = data.session;
+        }
+        
         socket.value.off('attached-to-connection', handleAttached);
         socket.value.off('attach-error', handleError);
         resolve(data);

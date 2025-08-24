@@ -299,16 +299,19 @@ const setupTerminalEventHandlers = (tab) => {
   
   // Data handler
   const onDataHandler = (data) => {
-    if (tab.isConnected && tab.id === tabsStore.activeTabId) {
+    if (tab.isConnected) {
+      console.log(`Terminal input from tab ${tab.id}:`, data)
       terminalStore.sendInput(data)
       // Update tab buffer
       tabsStore.appendToTabBuffer(tab.id, data)
+    } else {
+      console.warn(`Cannot send input - tab ${tab.id} not connected`)
     }
   }
   
   // Resize handler
   const onResizeHandler = (size) => {
-    if (tab.isConnected && tab.id === tabsStore.activeTabId) {
+    if (tab.isConnected) {
       terminalStore.resizeTerminal(size)
     }
   }
@@ -411,9 +414,16 @@ const closeTab = async (tabId) => {
   const tab = tabsStore.getTabById(tabId)
   if (!tab) return
   
-  // Disconnect if connected (but keep SSH connection alive on server)
-  if (tab.isConnected) {
-    await terminalStore.disconnectSession(false)
+  console.log(`Closing tab ${tabId} and terminating SSH connection`)
+  
+  // Force disconnect and terminate the SSH connection
+  if (tab.isConnected && tab.connectionId) {
+    try {
+      await terminalStore.disconnectSession(true) // Force close connection
+      console.log(`SSH connection terminated for tab ${tabId}`)
+    } catch (error) {
+      console.error('Error terminating SSH connection:', error)
+    }
   }
   
   // Remove tab
@@ -574,16 +584,42 @@ onMounted(async () => {
       console.log('Rejoining active session from localStorage')
       const rejoinData = JSON.parse(sessionToRejoin)
       localStorage.removeItem('rejoinSession')
-      // Create tab and attach to existing connection
+      
+      // Create tab for the session
       const tab = tabsStore.addTab(rejoinData.session)
+      
+      // Initialize terminal first
       await initializeTabTerminal(tab)
+      
+      // Set tab as connecting
+      tabsStore.updateTabConnection(tab.id, { isConnecting: true })
+      
+      // Set up terminal listeners BEFORE attaching to connection
+      setupTerminalEventHandlers(tab)
+      
+      // Set up terminal store listeners for this terminal
+      if (tab.terminal) {
+        terminalStore.setupTerminalListeners(tab.terminal)
+      }
+      
+      // Now attach to the existing connection
       await terminalStore.attachToConnection(rejoinData.connectionId)
+      
+      // Update connection status
       tabsStore.updateTabConnection(tab.id, {
         connectionId: rejoinData.connectionId,
         isConnected: true,
         isConnecting: false
       })
-      setupTerminalEventHandlers(tab)
+      
+      // Set active session in terminal store
+      terminalStore.activeSession = rejoinData.session
+      terminalStore.connectionId = rejoinData.connectionId
+      
+      // Focus the terminal
+      tab.terminal?.focus()
+      
+      console.log('Session rejoined successfully')
     } catch (error) {
       console.error('Failed to rejoin session from localStorage:', error)
     }

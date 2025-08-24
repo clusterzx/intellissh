@@ -547,10 +547,10 @@ const disconnect = async () => {
     }
   }
   
-  // Disconnect session
-  console.log('Calling terminalStore.disconnectSession()...');
-  await terminalStore.disconnectSession();
-  console.log('Disconnect process initiated.');
+  // Disconnect session - force close to terminate SSH connection
+  console.log('Calling terminalStore.disconnectSession(true) to force close...');
+  await terminalStore.disconnectSession(true);
+  console.log('SSH connection terminated.');
 
   // Redirect to homepage after successful disconnection
   router.push('/');

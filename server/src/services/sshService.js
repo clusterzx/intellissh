@@ -181,12 +181,16 @@ class SSHService extends EventEmitter {
         
         connection.lastActivity = Date.now();
         
-        // Store some terminal output for context
+        // Store terminal output for session restoration
+        if (!connection.terminalBuffer) {
+          connection.terminalBuffer = '';
+        }
         connection.terminalBuffer += output;
-        if (connection.terminalBuffer.length > 10000) {
-          // Keep only the last 10KB of output to avoid memory issues
+        
+        // Keep only the last 50KB of output for better restoration
+        if (connection.terminalBuffer.length > 50000) {
           connection.terminalBuffer = connection.terminalBuffer.substring(
-            connection.terminalBuffer.length - 10000
+            connection.terminalBuffer.length - 50000
           );
         }
         
@@ -760,11 +764,15 @@ class SSHService extends EventEmitter {
     this.setupStreamHandlers(connectionId, connection.stream, socket);
     
     // Send buffered terminal output to the new socket
-    if (connection.terminalBuffer) {
+    console.log(`Sending terminal buffer (${connection.terminalBuffer?.length || 0} chars) to reconnecting socket`);
+    if (connection.terminalBuffer && connection.terminalBuffer.length > 0) {
       socket.emit('terminal-restore', { 
         buffer: connection.terminalBuffer,
         sessionId: connection.sessionId 
       });
+      console.log('Terminal buffer sent to client');
+    } else {
+      console.log('No terminal buffer to restore');
     }
     
     return true;
