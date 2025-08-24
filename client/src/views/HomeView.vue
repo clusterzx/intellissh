@@ -131,9 +131,9 @@
                   </h3>
                   <!-- Connection Status -->
                   <div
-                    v-if="isSessionConnected(session.id)"
+                    v-if="hasActiveConnection(session.id)"
                     class="status-indicator status-connected ml-2"
-                    title="Connected"
+                    title="Active SSH Connection"
                   ></div>
                 </div>
                 <!-- Dropdown Menu -->
@@ -217,7 +217,32 @@
               </div>
             </div>
             <div class="card-footer">
-              <div class="flex space-x-2">
+              <!-- Active Connection Actions -->
+              <div v-if="hasActiveConnection(session.id)" class="flex space-x-2">
+                <button
+                  @click="rejoinSession(session)"
+                  :disabled="connectingToSession === session.id"
+                  class="flex-1 btn-primary bg-green-600 hover:bg-green-700 border-green-600"
+                >
+                  <span v-if="connectingToSession === session.id" class="spinner mr-2"></span>
+                  <svg v-else class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z" />
+                  </svg>
+                  {{ connectingToSession === session.id ? $t('message.rejoining') : $t('message.rejoin_active') }}
+                </button>
+                <button
+                  @click="openInMultiTab(session)"
+                  class="btn-outline px-3"
+                  title="Open in Multi-Tab"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </button>
+              </div>
+              
+              <!-- New Connection Actions -->
+              <div v-else class="flex space-x-2">
                 <button
                   @click="connectToSession(session)"
                   :disabled="connectingToSession === session.id"
@@ -334,6 +359,8 @@ const connectingToSession = ref(null)
 const testingConnection = ref(null)
 const deletingSession = ref(false)
 const fullScreenSnapshot = ref(null)
+const activeConnections = ref([])
+const loadingConnections = ref(false)
 
 // Computed
 const filteredSessions = computed(() => {
@@ -420,9 +447,7 @@ const openInMultiTab = (session) => {
   router.push('/terminals');
 };
 
-const isSessionConnected = (sessionId) => {
-  return terminalStore.hasActiveSession && terminalStore.activeSession?.id === sessionId;
-}
+// Removed isSessionConnected - now using hasActiveConnection with server-side active connections
 
 const closeModal = () => {
   showCreateModal.value = false
@@ -499,11 +524,67 @@ const handleNavigateBack = () => {
   }
 }
 
+// Load active SSH connections
+const loadActiveConnections = async () => {
+  if (loadingConnections.value) return
+  
+  loadingConnections.value = true
+  try {
+    if (!terminalStore.socketConnected) {
+      await terminalStore.init()
+    }
+    const connections = await terminalStore.getUserConnections()
+    activeConnections.value = connections || []
+    console.log('Active connections loaded:', activeConnections.value)
+  } catch (error) {
+    console.error('Failed to load active connections:', error)
+    activeConnections.value = []
+  } finally {
+    loadingConnections.value = false
+  }
+}
+
+// Check if a session has an active connection
+const hasActiveConnection = (sessionId) => {
+  return activeConnections.value.some(conn => conn.sessionId === sessionId)
+}
+
+// Get connection info for a session
+const getConnectionInfo = (sessionId) => {
+  return activeConnections.value.find(conn => conn.sessionId === sessionId)
+}
+
+// Rejoin an active session
+const rejoinSession = async (session) => {
+  const connectionInfo = getConnectionInfo(session.id)
+  if (!connectionInfo) {
+    console.error('No active connection found for session:', session.id)
+    return
+  }
+  
+  connectingToSession.value = session.id
+  try {
+    // Store the session to rejoin
+    localStorage.setItem('rejoinSession', JSON.stringify({
+      session: session,
+      connectionId: connectionInfo.connectionId
+    }))
+    // Navigate to multi-terminal view
+    router.push('/terminals')
+  } catch (error) {
+    console.error('Failed to rejoin session:', error)
+    connectingToSession.value = null
+  }
+}
+
 // Helper function to refresh sessions with proper error handling
 const refreshSessions = async () => {
   try {
-    // Fetch the sessions
-    await sessionStore.fetchSessions()
+    // Fetch the sessions and active connections
+    await Promise.all([
+      sessionStore.fetchSessions(),
+      loadActiveConnections()
+    ])
   } catch (err) {
     console.error(t('message.failed_to_refresh_sessions'), err)
   }

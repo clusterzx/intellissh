@@ -181,34 +181,62 @@ export const useTerminalStore = defineStore('terminal', () => {
 
   const setupTerminalListeners = (terminal) => {
     if (!socket.value) return
+    
+    // Clean up any existing terminal listeners to prevent duplicates
+    if (socket.value._terminalListeners) {
+      socket.value._terminalListeners.forEach(cleanup => cleanup())
+    }
+    socket.value._terminalListeners = []
 
     // Handle terminal output from server
-    socket.value.on('terminal-output', (data) => {
+    const handleTerminalOutput = (data) => {
       if (terminal && typeof terminal.write === 'function') {
         terminal.write(data)
       }
       terminalOutput.value += data
-    })
+    }
 
     // Handle terminal disconnection
-    socket.value.on('terminal-disconnected', (data) => {
+    const handleTerminalDisconnected = (data) => {
       console.log('Terminal disconnected:', data)
       
       if (terminal && typeof terminal.write === 'function') {
         terminal.write('\r\n\x1b[31mConnection closed.\x1b[0m\r\n')
       }
-      resetTerminalState() // Call the new reset function
-    })
+      resetTerminalState()
+    }
 
     // Handle terminal errors
-    socket.value.on('terminal-error', (error) => {
+    const handleTerminalError = (error) => {
       console.error('Terminal error:', error)
       connectionError.value = error.message
       
       if (terminal && typeof terminal.write === 'function') {
         terminal.write(`\r\n\x1b[31mError: ${error.message}\x1b[0m\r\n`)
       }
-    })
+    }
+    
+    // Handle terminal restore (for reconnecting to existing sessions)
+    const handleTerminalRestore = (data) => {
+      console.log('Restoring terminal buffer:', data)
+      if (terminal && typeof terminal.write === 'function' && data.buffer) {
+        terminal.write(data.buffer)
+      }
+    }
+    
+    // Attach listeners
+    socket.value.on('terminal-output', handleTerminalOutput)
+    socket.value.on('terminal-disconnected', handleTerminalDisconnected)
+    socket.value.on('terminal-error', handleTerminalError)
+    socket.value.on('terminal-restore', handleTerminalRestore)
+    
+    // Store cleanup functions
+    socket.value._terminalListeners.push(
+      () => socket.value.off('terminal-output', handleTerminalOutput),
+      () => socket.value.off('terminal-disconnected', handleTerminalDisconnected),
+      () => socket.value.off('terminal-error', handleTerminalError),
+      () => socket.value.off('terminal-restore', handleTerminalRestore)
+    )
   }
 
   const getConnectionStatus = () => {
@@ -267,12 +295,14 @@ export const useTerminalStore = defineStore('terminal', () => {
       socket.value.emit('attach-to-connection', { connectionId });
       
       const handleAttached = (data) => {
+        console.log('Attached to connection:', data);
         socket.value.off('attached-to-connection', handleAttached);
         socket.value.off('attach-error', handleError);
         resolve(data);
       };
       
       const handleError = (error) => {
+        console.error('Attachment error:', error);
         socket.value.off('attached-to-connection', handleAttached);
         socket.value.off('attach-error', handleError);
         reject(new Error(error.message));

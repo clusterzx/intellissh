@@ -31,22 +31,30 @@ export const useTerminalTabsStore = defineStore('terminalTabs', () => {
     if (savedTabs) {
       try {
         const parsedTabs = JSON.parse(savedTabs)
+        console.log('Restoring tabs from localStorage:', parsedTabs)
+        
         tabs.value = parsedTabs.map(tab => ({
           ...tab,
           terminal: null, // Terminal instances will be recreated
           fitAddon: null,
-          isConnected: false // Will reconnect after restoration
+          terminalHandlers: null,
+          isConnected: false, // Will reconnect after restoration
+          isConnecting: false
         }))
         
         if (savedActiveTab && tabs.value.find(t => t.id === savedActiveTab)) {
           activeTabId.value = savedActiveTab
+          console.log('Restored active tab:', savedActiveTab)
         } else if (tabs.value.length > 0) {
           activeTabId.value = tabs.value[0].id
+          console.log('Set first tab as active:', tabs.value[0].id)
         }
         
         return true
       } catch (error) {
         console.error('Failed to restore tabs:', error)
+        localStorage.removeItem('terminalTabs')
+        localStorage.removeItem('activeTabId')
         return false
       }
     }

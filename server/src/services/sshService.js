@@ -140,16 +140,28 @@ class SSHService extends EventEmitter {
     const connection = this.connections.get(connectionId);
     if (!connection) return;
 
-    // Initialize LLM helper properties
-    connection.llmHelperEnabled = false;
-    connection.lastCommands = [];
-    connection.terminalBuffer = '';
-    connection.outputBuffer = '';
-    connection.isProcessing = false;
-    connection.promptPattern = /^(.+@.+:.+[#$])\s*$/m; // Matches shell prompts like "root@cloudpanel:~#"
-    connection.commandRunning = false;
-    connection.currentPrompt = null;
-    connection.commandCompletionTimer = null;
+    // Initialize LLM helper properties only if not already initialized
+    if (connection.llmHelperEnabled === undefined) {
+      connection.llmHelperEnabled = false;
+      connection.lastCommands = [];
+      connection.terminalBuffer = '';
+      connection.outputBuffer = '';
+      connection.isProcessing = false;
+      connection.promptPattern = /^(.+@.+:.+[#$])\s*$/m; // Matches shell prompts like "root@cloudpanel:~#"
+      connection.commandRunning = false;
+      connection.currentPrompt = null;
+      connection.commandCompletionTimer = null;
+      connection.streamHandlersSetup = false;
+    }
+
+    // Only set up stream handlers once per connection
+    if (connection.streamHandlersSetup) {
+      // Just set up socket-specific handlers
+      this.setupSocketHandlers(connectionId, socket);
+      return;
+    }
+    
+    connection.streamHandlersSetup = true;
 
     // Handle data from SSH stream to browser
     stream.on('data', async (data) => {
@@ -316,43 +328,7 @@ class SSHService extends EventEmitter {
       this.cleanup(connectionId);
     });
 
-    // Handle input from browser to SSH stream
-    socket.on('terminal-input', (data) => {
-      try {
-        if (connection.connected && stream.writable) {
-          stream.write(data);
-          connection.lastActivity = Date.now();
-          
-          // If this appears to be a full command (ends with newline),
-          // store it for LLM context and mark a command as running
-          if (data.endsWith('\n') || data.endsWith('\r')) {
-            const commandText = data.trim();
-            if (commandText && commandText.length > 0) {
-              if (!connection.lastCommands) connection.lastCommands = [];
-              connection.lastCommands.push(commandText);
-              if (connection.lastCommands.length > 10) connection.lastCommands.shift();
-              
-              // Mark that a command is now running
-              connection.commandRunning = true;
-              connection.outputBuffer = ''; // Reset buffer to capture just the output of this command
-            }
-          }
-        }
-      } catch (error) {
-        console.error(`Error writing to SSH stream ${connectionId}:`, error.message);
-      }
-    });
-
-    // Handle terminal resize
-    socket.on('terminal-resize', (size) => {
-      try {
-        if (connection.connected && stream.setWindow) {
-          stream.setWindow(size.rows, size.cols);
-        }
-      } catch (error) {
-        console.error(`Error resizing terminal ${connectionId}:`, error.message);
-      }
-    });
+    // Socket-specific handlers are now set up in setupSocketHandlers method
 
     // Add event handlers for LLM helper
     socket.on('toggle-llm-helper', (data) => {
@@ -516,22 +492,94 @@ class SSHService extends EventEmitter {
       }
     });
 
+    // Set up socket-specific handlers
+    this.setupSocketHandlers(connectionId, socket);
+  }
+
+  setupSocketHandlers(connectionId, socket) {
+    const connection = this.connections.get(connectionId);
+    if (!connection) return;
+    
+    // Store socket reference for cleanup
+    if (!socket.sshHandlers) {
+      socket.sshHandlers = [];
+    }
+    
+    // Clean up any existing handlers for this socket
+    socket.sshHandlers.forEach(cleanup => cleanup());
+    socket.sshHandlers = [];
+
+    // Handle input from browser to SSH stream
+    const handleTerminalInput = (data) => {
+      try {
+        if (connection.connected && connection.stream && connection.stream.writable) {
+          connection.stream.write(data);
+          connection.lastActivity = Date.now();
+          
+          // If this appears to be a full command (ends with newline),
+          // store it for LLM context and mark a command as running
+          if (data.endsWith('\n') || data.endsWith('\r')) {
+            const commandText = data.trim();
+            if (commandText && commandText.length > 0) {
+              if (!connection.lastCommands) connection.lastCommands = [];
+              connection.lastCommands.push(commandText);
+              if (connection.lastCommands.length > 10) connection.lastCommands.shift();
+              
+              // Mark that a command is now running
+              connection.commandRunning = true;
+              connection.outputBuffer = ''; // Reset buffer to capture just the output of this command
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Error writing to SSH stream ${connectionId}:`, error.message);
+      }
+    };
+
+    // Handle terminal resize
+    const handleTerminalResize = (size) => {
+      try {
+        if (connection.connected && connection.stream && connection.stream.setWindow) {
+          connection.stream.setWindow(size.rows, size.cols);
+        }
+      } catch (error) {
+        console.error(`Error resizing terminal ${connectionId}:`, error.message);
+      }
+    };
+
     // Handle socket disconnect
-    socket.on('disconnect', () => {
+    const handleSocketDisconnect = () => {
       console.log(`Socket disconnected for ${connectionId}`);
       
       // Remove this socket from the connection's socket set
       if (connection.sockets) {
         connection.sockets.delete(socket);
         
-        // Only disconnect SSH if no more sockets are connected
-        if (connection.sockets.size === 0 && !connection.persistent) {
-          this.disconnect(connectionId);
-        }
+        // Don't automatically disconnect SSH connections when sockets disconnect
+        // Connections will remain alive until explicitly disconnected
+        console.log(`Socket removed from connection ${connectionId}. ${connection.sockets.size} sockets remaining.`);
       } else {
         this.disconnect(connectionId);
       }
-    });
+      
+      // Clean up socket handlers
+      if (socket.sshHandlers) {
+        socket.sshHandlers.forEach(cleanup => cleanup());
+        socket.sshHandlers = [];
+      }
+    };
+
+    // Attach handlers
+    socket.on('terminal-input', handleTerminalInput);
+    socket.on('terminal-resize', handleTerminalResize);
+    socket.on('disconnect', handleSocketDisconnect);
+    
+    // Store cleanup functions
+    socket.sshHandlers.push(
+      () => socket.off('terminal-input', handleTerminalInput),
+      () => socket.off('terminal-resize', handleTerminalResize),
+      () => socket.off('disconnect', handleSocketDisconnect)
+    );
   }
 
   disconnect(connectionId, forceClose = false) {

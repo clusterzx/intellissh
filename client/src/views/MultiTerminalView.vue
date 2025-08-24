@@ -277,18 +277,7 @@ const initializeTabTerminal = async (tab) => {
   // Store terminal instance in tab
   tabsStore.updateTabTerminal(tab.id, terminal, fitAddon)
   
-  // Set up terminal event handlers
-  terminal.onData((data) => {
-    if (tab.isConnected) {
-      terminalStore.sendInput(data)
-    }
-  })
-  
-  terminal.onResize((size) => {
-    if (tab.isConnected) {
-      terminalStore.resizeTerminal(size)
-    }
-  })
+  // Terminal event handlers will be set up separately for each tab
   
   // Restore buffer if exists
   if (tab.terminalBuffer) {
@@ -298,23 +287,69 @@ const initializeTabTerminal = async (tab) => {
   return { terminal, fitAddon }
 }
 
+// Set up terminal event handlers for a specific tab
+const setupTerminalEventHandlers = (tab) => {
+  if (!tab.terminal) return
+  
+  // Clean up any existing handlers
+  if (tab.terminalHandlers) {
+    tab.terminalHandlers.forEach(cleanup => cleanup())
+  }
+  tab.terminalHandlers = []
+  
+  // Data handler
+  const onDataHandler = (data) => {
+    if (tab.isConnected && tab.id === tabsStore.activeTabId) {
+      terminalStore.sendInput(data)
+      // Update tab buffer
+      tabsStore.appendToTabBuffer(tab.id, data)
+    }
+  }
+  
+  // Resize handler
+  const onResizeHandler = (size) => {
+    if (tab.isConnected && tab.id === tabsStore.activeTabId) {
+      terminalStore.resizeTerminal(size)
+    }
+  }
+  
+  // Attach handlers
+  tab.terminal.onData(onDataHandler)
+  tab.terminal.onResize(onResizeHandler)
+  
+  // Store cleanup functions
+  tab.terminalHandlers.push(
+    () => tab.terminal?.dispose && tab.terminal.dispose()
+  )
+}
+
 // Connect tab to SSH session
 const connectTab = async (tab) => {
   if (tab.isConnected || tab.isConnecting) return
   
   try {
+    console.log(`Connecting tab ${tab.id} to session ${tab.sessionId}`)
     tabsStore.updateTabConnection(tab.id, { isConnecting: true })
     
     // Initialize terminal store if not connected
     if (!terminalStore.socketConnected) {
+      console.log('Initializing terminal store')
       await terminalStore.init()
     }
     
+    // Initialize terminal if not already done
+    if (!tab.terminal) {
+      console.log('Initializing terminal for tab:', tab.id)
+      await initializeTabTerminal(tab)
+    }
+    
     // Check for existing connections for this session
+    console.log('Checking for existing connections')
     const existingConnections = await terminalStore.getUserConnections()
     const existingConnection = existingConnections.find(c => c.sessionId === tab.sessionId)
     
     if (existingConnection) {
+      console.log('Found existing connection:', existingConnection.connectionId)
       // Attach to existing connection
       await terminalStore.attachToConnection(existingConnection.connectionId)
       tabsStore.updateTabConnection(tab.id, {
@@ -323,6 +358,7 @@ const connectTab = async (tab) => {
         isConnecting: false
       })
     } else {
+      console.log('Creating new connection for session:', tab.sessionId)
       // Create new connection
       await terminalStore.connectToSession(tab.sessionId, true)
       tabsStore.updateTabConnection(tab.id, {
@@ -332,14 +368,9 @@ const connectTab = async (tab) => {
       })
     }
     
-    // Initialize terminal if not already done
-    if (!tab.terminal) {
-      await initializeTabTerminal(tab)
-    }
-    
     // Set up terminal listeners for this tab
     if (tab.terminal) {
-      terminalStore.setupTerminalListeners(tab.terminal)
+      setupTerminalEventHandlers(tab)
     }
     
     // Focus terminal
@@ -526,10 +557,39 @@ const handleKeydown = (e) => {
 
 // Restore tabs on mount
 onMounted(async () => {
+  console.log('MultiTerminalView mounted')
+  
+  // Initialize terminal store
+  if (!terminalStore.socketConnected) {
+    console.log('Initializing terminal store on mount')
+    await terminalStore.init()
+  }
+  
   // Check if we should open a specific session
   const sessionToOpen = localStorage.getItem('openSessionInTab')
-  if (sessionToOpen) {
+  const sessionToRejoin = localStorage.getItem('rejoinSession')
+  
+  if (sessionToRejoin) {
     try {
+      console.log('Rejoining active session from localStorage')
+      const rejoinData = JSON.parse(sessionToRejoin)
+      localStorage.removeItem('rejoinSession')
+      // Create tab and attach to existing connection
+      const tab = tabsStore.addTab(rejoinData.session)
+      await initializeTabTerminal(tab)
+      await terminalStore.attachToConnection(rejoinData.connectionId)
+      tabsStore.updateTabConnection(tab.id, {
+        connectionId: rejoinData.connectionId,
+        isConnected: true,
+        isConnecting: false
+      })
+      setupTerminalEventHandlers(tab)
+    } catch (error) {
+      console.error('Failed to rejoin session from localStorage:', error)
+    }
+  } else if (sessionToOpen) {
+    try {
+      console.log('Opening session from localStorage')
       const session = JSON.parse(sessionToOpen)
       localStorage.removeItem('openSessionInTab')
       // Open the session in a new tab
@@ -539,14 +599,22 @@ onMounted(async () => {
     }
   } else {
     // Try to restore tabs from localStorage
+    console.log('Attempting to restore tabs')
     const restored = tabsStore.restoreTabs()
     
     if (restored && tabsStore.hasActiveTabs) {
+      console.log('Tabs restored, reconnecting to active tab')
+      // Wait a bit for the UI to be ready
+      await nextTick()
+      
       // Reconnect to active tab
       const activeTab = tabsStore.activeTab
       if (activeTab) {
+        console.log('Reconnecting to active tab:', activeTab.id)
         await switchTab(activeTab.id)
       }
+    } else {
+      console.log('No tabs to restore')
     }
   }
   
@@ -560,12 +628,25 @@ onMounted(async () => {
 
 // Clean up on unmount
 onUnmounted(() => {
+  console.log('MultiTerminalView unmounting')
+  
   window.removeEventListener('resize', handleResize)
   document.removeEventListener('keydown', handleKeydown)
   document.removeEventListener('click', closeContextMenu)
   
-  // Clean up all terminal instances
+  // Clean up all terminal instances and their handlers
   tabsStore.allTabs.forEach(tab => {
+    // Clean up terminal handlers
+    if (tab.terminalHandlers) {
+      tab.terminalHandlers.forEach(cleanup => {
+        try {
+          cleanup()
+        } catch (e) {
+          console.error('Error cleaning up terminal handler:', e)
+        }
+      })
+    }
+    
     if (tab.fitAddon) {
       try {
         tab.fitAddon.dispose()
@@ -582,6 +663,17 @@ onUnmounted(() => {
       }
     }
   })
+  
+  // Clean up terminal store listeners
+  if (terminalStore.socket?.value?._terminalListeners) {
+    terminalStore.socket.value._terminalListeners.forEach(cleanup => {
+      try {
+        cleanup()
+      } catch (e) {
+        console.error('Error cleaning up terminal store listener:', e)
+      }
+    })
+  }
 })
 
 // Watch for dark mode changes

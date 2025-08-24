@@ -187,16 +187,11 @@ const handleSocketConnection = (io) => {
     socket.on('disconnect', (reason) => {
       console.log(`Socket ${socket.id} disconnected: ${reason}`);
       
-      // Don't immediately disconnect SSH if it's a persistent connection
-      // The connection will remain alive for reconnection
-      if (socket.connectionId && reason !== 'client namespace disconnect') {
-        const connection = sshService.getConnection(socket.connectionId);
-        if (connection && connection.persistent) {
-          console.log(`Keeping persistent SSH connection alive: ${socket.connectionId}`);
-        } else {
-          console.log(`Cleaning up SSH connection: ${socket.connectionId}`);
-          sshService.disconnect(socket.connectionId);
-        }
+      // Keep SSH connections alive when browser/tab closes
+      // Only disconnect SFTP since it's less resource-intensive to reconnect
+      if (socket.connectionId) {
+        console.log(`Keeping SSH connection alive for reconnection: ${socket.connectionId}`);
+        // The connection will remain in the pool for future reconnection
       }
       
       if (socket.sftpConnectionId) {
