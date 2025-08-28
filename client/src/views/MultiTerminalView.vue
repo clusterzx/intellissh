@@ -374,6 +374,8 @@ const connectTab = async (tab) => {
     // Set up terminal listeners for this tab
     if (tab.terminal) {
       setupTerminalEventHandlers(tab)
+      // Ensure terminal store listeners are set up to receive server output
+      terminalStore.setupTerminalListeners(tab.terminal)
     }
     
     // Focus terminal
