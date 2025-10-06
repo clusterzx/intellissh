@@ -84,6 +84,7 @@ docker run -d -p 8080:3000 --name intellissh clusterzx/intellissh:latest
 ```
 
 #### Run with volume mounts for persistence
+Bash :
 ```bash
 docker run -d \
   -p 8080:3000 \
@@ -91,6 +92,16 @@ docker run -d \
   --name intellissh \
   clusterzx/intellissh:latest
 ```
+PowerShell :
+```bash
+docker run -d -p 8080:3000 -v "${PWD}/data:/app/server/data" --name intellissh clusterzx/intellissh:latest
+```
+
+Windows CMD :
+```bash
+docker run -d -p 8080:3000 -v "%cd%\data:/app/server/data" --name intellissh clusterzx/intellissh:latest
+```
+(For Windows CMD the "data" repository specified must exist or this command will fail)
 
 #### Docker Compose
 
