@@ -150,6 +150,7 @@ Please log in and change this password immediately!
         private_key TEXT,
         key_passphrase TEXT,
         iv TEXT,
+        credential_id INTEGER,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         console_snapshot TEXT,
@@ -179,6 +180,29 @@ Please log in and change this password immediately!
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
         FOREIGN KEY (setting_id) REFERENCES settings (id) ON DELETE CASCADE,
         UNIQUE(user_id, setting_id)
+      )
+    `;
+
+    const createTagsTable = `
+      CREATE TABLE IF NOT EXISTS tags (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        name TEXT NOT NULL COLLATE NOCASE,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, name),
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+      )
+    `;
+
+    const createSessionTagsTable = `
+      CREATE TABLE IF NOT EXISTS session_tags (
+        session_id INTEGER NOT NULL,
+        tag_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (session_id, tag_id),
+        FOREIGN KEY (session_id) REFERENCES sessions (id) ON DELETE CASCADE,
+        FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE
       )
     `;
 
@@ -214,8 +238,25 @@ Please log in and change this password immediately!
             reject(err);
             return;
           }
-          console.log('Database tables initialized.');
-          resolve();
+
+          this.db.run(createTagsTable, (err) => {
+            if (err) {
+              console.error('Error creating tags table:', err.message);
+              reject(err);
+              return;
+            }
+
+            this.db.run(createSessionTagsTable, (err) => {
+              if (err) {
+                console.error('Error creating session_tags table:', err.message);
+                reject(err);
+                return;
+              }
+
+              console.log('Database tables initialized.');
+              resolve();
+            });
+          });
         });
       });
     });

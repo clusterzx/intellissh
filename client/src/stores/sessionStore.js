@@ -9,6 +9,34 @@ export const useSessionStore = defineStore('session', () => {
   const loading = ref(false)
   const error = ref(null)
 
+  const normalizeSession = (session) => {
+    if (!session || typeof session !== 'object') {
+      return null
+    }
+
+    const {
+      credential_id,
+      credentialId,
+      tags,
+      ...rest
+    } = session
+
+    const normalizedTags = Array.isArray(tags)
+      ? tags.map(tag => ({
+          id: tag.id,
+          name: tag.name,
+          created_at: tag.created_at,
+          updated_at: tag.updated_at
+        }))
+      : []
+
+    return {
+      ...rest,
+      credentialId: credentialId ?? credential_id ?? null,
+      tags: normalizedTags
+    }
+  }
+
   // Getters
   const allSessions = computed(() => sessions.value)
   const isLoading = computed(() => loading.value)
@@ -23,10 +51,10 @@ export const useSessionStore = defineStore('session', () => {
 
     try {
       const response = await axios.get('/api/sessions')
-      sessions.value = response.data.sessions.map(session => ({
-        ...session,
-        credentialId: session.credential_id // Map backend's credential_id to frontend's credentialId
-      }))
+      const sessionPayload = Array.isArray(response.data?.sessions) ? response.data.sessions : []
+      sessions.value = sessionPayload
+        .map(normalizeSession)
+        .filter(Boolean)
       // console.log('fetchSessions: Successfully fetched sessions.')
       return { success: true }
     } catch (err) {
@@ -45,11 +73,9 @@ export const useSessionStore = defineStore('session', () => {
 
     try {
       const response = await axios.get(`/api/sessions/${sessionId}`)
-      currentSession.value = {
-        ...response.data.session,
-        credentialId: response.data.session.credential_id // Map backend's credential_id
-      }
-      return { success: true, session: currentSession.value }
+      const normalizedSession = normalizeSession(response.data.session)
+      currentSession.value = normalizedSession
+      return { success: true, session: normalizedSession }
     } catch (err) {
       error.value = err.response?.data?.error || 'Failed to fetch session'
       return { success: false, error: error.value }
@@ -64,10 +90,11 @@ export const useSessionStore = defineStore('session', () => {
 
     try {
       const response = await axios.post('/api/sessions', sessionData)
-      const newSession = response.data.session
-      
-      // Add to local sessions array
-      sessions.value.unshift(newSession)
+      const newSession = normalizeSession(response.data.session)
+
+      if (newSession) {
+        sessions.value.unshift(newSession)
+      }
       
       return { success: true, session: newSession }
     } catch (err) {
@@ -84,15 +111,17 @@ export const useSessionStore = defineStore('session', () => {
 
     try {
       const response = await axios.put(`/api/sessions/${sessionId}`, sessionData)
-      const updatedSession = {
-        ...response.data.session,
-        credentialId: response.data.session.credential_id // Map backend's credential_id
-      }
-      
-      // Update in local sessions array
-      const index = sessions.value.findIndex(s => s.id === sessionId)
-      if (index !== -1) {
-        sessions.value[index] = updatedSession
+      const updatedSession = normalizeSession(response.data.session)
+
+      if (updatedSession) {
+        const index = sessions.value.findIndex(s => s.id === sessionId)
+        if (index !== -1) {
+          sessions.value[index] = updatedSession
+        }
+
+        if (currentSession.value?.id === sessionId) {
+          currentSession.value = updatedSession
+        }
       }
       
       return { success: true, session: updatedSession }
@@ -131,10 +160,11 @@ export const useSessionStore = defineStore('session', () => {
       const response = await axios.post(`/api/sessions/${sessionId}/duplicate`, {
         name: newName
       })
-      const duplicatedSession = response.data.session
+      const duplicatedSession = normalizeSession(response.data.session)
       
-      // Add to local sessions array
-      sessions.value.unshift(duplicatedSession)
+      if (duplicatedSession) {
+        sessions.value.unshift(duplicatedSession)
+      }
       
       return { success: true, session: duplicatedSession }
     } catch (err) {
@@ -205,11 +235,17 @@ export const useSessionStore = defineStore('session', () => {
     if (!query) return sessions.value
     
     const searchTerm = query.toLowerCase()
-    return sessions.value.filter(session => 
-      session.name.toLowerCase().includes(searchTerm) ||
-      session.hostname.toLowerCase().includes(searchTerm) ||
-      session.username.toLowerCase().includes(searchTerm)
-    )
+    return sessions.value.filter(session => {
+      const matchesField = [session.name, session.hostname, session.username]
+        .filter(Boolean)
+        .some(field => field.toLowerCase().includes(searchTerm))
+
+      const matchesTag = Array.isArray(session.tags)
+        ? session.tags.some(tag => tag.name?.toLowerCase().includes(searchTerm))
+        : false
+
+      return matchesField || matchesTag
+    })
   }
 
   const clearError = () => {
@@ -222,6 +258,64 @@ export const useSessionStore = defineStore('session', () => {
 
   const setCurrentSession = (session) => {
     currentSession.value = session
+  }
+
+  const removeTagFromSessions = (tagId) => {
+    if (!tagId) return
+
+    sessions.value = sessions.value.map(session => {
+      if (!Array.isArray(session.tags) || session.tags.length === 0) {
+        return session
+      }
+
+      const filteredTags = session.tags.filter(tag => tag.id !== tagId)
+      if (filteredTags.length === session.tags.length) {
+        return session
+      }
+
+      return {
+        ...session,
+        tags: filteredTags
+      }
+    })
+
+    if (currentSession.value?.tags) {
+      currentSession.value = {
+        ...currentSession.value,
+        tags: currentSession.value.tags.filter(tag => tag.id !== tagId)
+      }
+    }
+  }
+
+  const renameTagInSessions = (tagId, newName) => {
+    if (!tagId || !newName) return
+
+    sessions.value = sessions.value.map(session => {
+      if (!Array.isArray(session.tags) || session.tags.length === 0) {
+        return session
+      }
+
+      let hasChanges = false
+      const updatedTags = session.tags.map(tag => {
+        if (tag.id === tagId) {
+          hasChanges = true
+          return {
+            ...tag,
+            name: newName
+          }
+        }
+        return tag
+      })
+
+      return hasChanges ? { ...session, tags: updatedTags } : session
+    })
+
+    if (currentSession.value?.tags?.length) {
+      currentSession.value = {
+        ...currentSession.value,
+        tags: currentSession.value.tags.map(tag => tag.id === tagId ? { ...tag, name: newName } : tag)
+      }
+    }
   }
 
   // Validation helpers
@@ -284,6 +378,8 @@ export const useSessionStore = defineStore('session', () => {
     clearError,
     clearCurrentSession,
     setCurrentSession,
+    removeTagFromSessions,
+    renameTagInSessions,
     validateSessionData,
     clearLoadingState
   }

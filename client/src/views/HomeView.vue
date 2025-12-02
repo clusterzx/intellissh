@@ -33,19 +33,42 @@
 
       <!-- Search and Filters -->
       <div class="px-4 mb-6 sm:px-0">
-        <div class="max-w-lg">
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg class="h-5 w-5 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div class="max-w-lg w-full">
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-5 w-5 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                v-model="searchQuery"
+                type="search"
+                :placeholder="$t('message.search_sessions')"
+                class="form-input pl-10"
+              />
             </div>
-            <input
-              v-model="searchQuery"
-              type="search"
-              :placeholder="$t('message.search_sessions')"
-              class="form-input pl-10"
-            />
+          </div>
+          <div class="flex-1">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+              <TagMultiSelect
+                v-model="selectedTagIds"
+                :tags="tagStore.tags"
+                :loading="tagStore.loading"
+                :placeholder="$t('message.filter_by_tags')"
+              />
+
+              <button
+                type="button"
+                @click="openTagManager"
+                class="inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-indigo-400 dark:hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+              >
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                {{ $t('message.manage_tags') }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -189,6 +212,16 @@
                   <span>{{ $t('message.updated_prefix') }} {{ formatDate(session.updated_at) }}</span>
                 </div>
               </div>
+
+              <div v-if="session.tags && session.tags.length" class="mt-3 flex flex-wrap gap-2">
+                <span
+                  v-for="tag in session.tags"
+                  :key="tag.id"
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-200"
+                >
+                  {{ tag.name }}
+                </span>
+              </div>
               
               <!-- Console Snapshot Preview -->
               <div v-if="session.console_snapshot || session.consoleSnapshot" class="mt-4">
@@ -227,6 +260,12 @@
       :session="editingSession"
       @close="closeModal"
       @saved="handleSessionSaved"
+    />
+
+    <TagManagerModal
+      v-if="showTagManager"
+      @close="showTagManager = false"
+      @tag-deleted="handleTagDeleted"
     />
 
     <!-- Delete Confirmation Modal -->
@@ -293,13 +332,16 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSessionStore } from '@/stores/sessionStore'
 import { useTerminalStore } from '@/stores/terminalStore'
+import { useTagStore } from '@/stores/tagStore'
 import SessionForm from '@/components/SessionForm.vue'
-import DarkModeToggle from '@/components/DarkModeToggle.vue'
+import TagManagerModal from '@/components/TagManagerModal.vue'
+import TagMultiSelect from '@/components/TagMultiSelect.vue'
 import { useI18n } from 'vue-i18n'
 
 // Stores and router
 const sessionStore = useSessionStore()
 const terminalStore = useTerminalStore()
+const tagStore = useTagStore()
 const router = useRouter()
 const { t } = useI18n()
 
@@ -313,14 +355,30 @@ const connectingToSession = ref(null)
 const testingConnection = ref(null)
 const deletingSession = ref(false)
 const fullScreenSnapshot = ref(null)
+const selectedTagIds = ref([])
+const showTagManager = ref(false)
 
 // Computed
 const filteredSessions = computed(() => {
-  if (!searchQuery.value) return sessionStore.allSessions
-  return sessionStore.searchSessions(searchQuery.value)
+  const list = searchQuery.value
+    ? sessionStore.searchSessions(searchQuery.value)
+    : (sessionStore.allSessions || [])
+
+  if (!selectedTagIds.value.length) {
+    return list
+  }
+
+  const selectedSet = new Set(selectedTagIds.value)
+  return list.filter(session =>
+    Array.isArray(session.tags) && session.tags.some(tag => selectedSet.has(tag.id))
+  )
 })
 
 // Methods
+const openTagManager = () => {
+  showTagManager.value = true
+}
+
 const toggleDropdown = (sessionId, event) => {
   event.stopPropagation()
   dropdownOpen.value = dropdownOpen.value === sessionId ? null : sessionId
@@ -342,6 +400,11 @@ const duplicateSession = async (session) => {
   
   if (!result.success) {
     console.error(t('message.failed_to_duplicate_session'), result.error)
+  } else {
+    const tagRefresh = await tagStore.fetchTags()
+    if (!tagRefresh.success) {
+      console.error(t('message.tag_loading_failed'), tagRefresh.error)
+    }
   }
 }
 
@@ -374,11 +437,19 @@ const confirmDelete = async () => {
   
   if (result.success) {
     sessionToDelete.value = null
+    const tagRefresh = await tagStore.fetchTags()
+    if (!tagRefresh.success) {
+      console.error(t('message.tag_loading_failed'), tagRefresh.error)
+    }
   } else {
     console.error(t('message.failed_to_delete_session'), result.error)
   }
   
   deletingSession.value = false
+}
+
+const handleTagDeleted = (tagId) => {
+  selectedTagIds.value = selectedTagIds.value.filter(id => id !== tagId)
 }
 
 const connectToSession = async (session) => {
@@ -410,10 +481,16 @@ const closeModal = () => {
   editingSession.value = null
 }
 
-const handleSessionSaved = () => {
+const handleSessionSaved = async () => {
   closeModal()
-  // Refresh sessions list
-  sessionStore.fetchSessions()
+  try {
+    await Promise.all([
+      sessionStore.fetchSessions(),
+      tagStore.fetchTags()
+    ])
+  } catch (err) {
+    console.error(t('message.failed_to_refresh_sessions'), err)
+  }
 }
 
 const formatDate = (dateString) => {
@@ -447,11 +524,6 @@ onMounted(async () => {
   // First, ensure we're not in a loading state
   sessionStore.clearLoadingState()
   
-  // Initialize sessions with an empty array if they're null
-  if (!sessionStore.sessions.value) {
-    sessionStore.sessions.value = []
-  }
-  
   // Try to fetch sessions
   refreshSessions()
   
@@ -483,8 +555,18 @@ const handleNavigateBack = () => {
 // Helper function to refresh sessions with proper error handling
 const refreshSessions = async () => {
   try {
-    // Fetch the sessions
-    await sessionStore.fetchSessions()
+    const [sessionResult, tagResult] = await Promise.all([
+      sessionStore.fetchSessions(),
+      tagStore.fetchTags()
+    ])
+
+    if (!sessionResult?.success) {
+      console.error(t('message.failed_to_refresh_sessions'), sessionResult?.error)
+    }
+
+    if (!tagResult?.success) {
+      console.error(t('message.tag_loading_failed'), tagResult?.error)
+    }
   } catch (err) {
     console.error(t('message.failed_to_refresh_sessions'), err)
   }
@@ -504,8 +586,21 @@ const forceRefreshSessions = async () => {
 
   // Use the store's fetchSessions method to ensure proper authentication and error handling
   try {
-    await sessionStore.fetchSessions()
-    console.log(t('message.manual_refresh_successful'))
+    const [sessionResult, tagResult] = await Promise.all([
+      sessionStore.fetchSessions(),
+      tagStore.fetchTags()
+    ])
+
+    if (sessionResult?.success && tagResult?.success) {
+      console.log(t('message.manual_refresh_successful'))
+    } else {
+      if (!sessionResult?.success) {
+        console.error(t('message.failed_to_refresh_sessions'), sessionResult?.error)
+      }
+      if (!tagResult?.success) {
+        console.error(t('message.tag_loading_failed'), tagResult?.error)
+      }
+    }
   } catch (err) {
     console.error(t('message.manual_refresh_failed'), err)
     // The sessionStore.fetchSessions() already handles setting error state and clearing sessions on failure
