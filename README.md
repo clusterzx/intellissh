@@ -2,7 +2,7 @@
 
 A secure and user-friendly web app for managing Linux servers with Artifical Intelligence via SSH—right from your browser + SFTP Browser in Terminal.
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue)
+![Version](https://img.shields.io/badge/version-1.3.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 Support this project:<br>
@@ -98,6 +98,37 @@ docker run -d \
 services:
   intellissh:
     image: clusterzx/intellissh:latest
+    container_name: intellissh
+    ports:
+      - 8080:3000
+    volumes:
+      # Mount for persistent backend data (SQLite DB, session info, etc.)
+      - ./data:/app/server/data
+    restart: unless-stopped
+```
+
+### For the new version v1.3.0 with multitab
+
+#### Run with port mapping (adjust ports as needed)
+```bash
+docker run -d -p 8080:3000 --name intellissh kosztyk/intellissh:latest
+```
+
+#### Run with volume mounts for persistence
+```bash
+docker run -d \
+  -p 8080:3000 \
+  -v $(pwd)/data:/app/server/data \
+  --name intellissh \
+  kosztyk/intellissh:latest
+```
+
+#### Docker Compose
+
+```yaml
+services:
+  intellissh:
+    image: kosztyk/intellissh:latest
     container_name: intellissh
     ports:
       - 8080:3000

@@ -1,6 +1,7 @@
 const express = require('express');
 const sessionService = require('../services/sessionService');
 const sshService = require('../services/sshService');
+const tagService = require('../services/tagService');
 const { authenticateToken } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -13,7 +14,29 @@ router.use(authenticateToken);
 // @access  Private
 router.get('/', async (req, res) => {
   try {
-    const sessions = await sessionService.getSessionsByUserId(req.user.id);
+    const { tagId } = req.query;
+    const filter = {};
+
+    if (tagId !== undefined) {
+      const parsedTagId = parseInt(tagId, 10);
+
+      if (Number.isNaN(parsedTagId) || parsedTagId <= 0) {
+        return res.status(400).json({
+          error: 'Invalid tag ID.'
+        });
+      }
+
+      const tag = await tagService.getTagById(parsedTagId, req.user.id);
+      if (!tag) {
+        return res.status(404).json({
+          error: 'Tag not found.'
+        });
+      }
+
+      filter.tagId = parsedTagId;
+    }
+
+    const sessions = await sessionService.getSessionsByUserId(req.user.id, filter);
 
     res.json({
       success: true,
@@ -80,6 +103,18 @@ router.post('/', async (req, res) => {
       credentialId: req.body.credentialId
     };
 
+    if (req.body.tags !== undefined) {
+      if (req.body.tags === null) {
+        sessionData.tags = [];
+      } else if (Array.isArray(req.body.tags)) {
+        sessionData.tags = req.body.tags;
+      } else {
+        return res.status(400).json({
+          error: 'Tags must be provided as an array.'
+        });
+      }
+    }
+
     // Validate session data
     await sessionService.validateSessionData(sessionData);
 
@@ -128,6 +163,18 @@ router.put('/:id', async (req, res) => {
       keyPassphrase: req.body.keyPassphrase,
       credentialId: req.body.credentialId
     };
+
+    if (req.body.tags !== undefined) {
+      if (req.body.tags === null) {
+        updateData.tags = [];
+      } else if (Array.isArray(req.body.tags)) {
+        updateData.tags = req.body.tags;
+      } else {
+        return res.status(400).json({
+          error: 'Tags must be provided as an array.'
+        });
+      }
+    }
 
     // Validate session data
     await sessionService.validateSessionData(updateData);

@@ -1,5 +1,5 @@
 <template>
-  <div id="app" :class="['min-h-screen', isTerminalView ? 'overflow-hidden' : '']">
+  <div id="app" :class="['min-h-screen flex flex-col', isTerminalView ? 'overflow-hidden' : '']">
     <!-- Navigation Bar - Hide on Terminal View -->
     <nav v-if="isAuthenticated && !isTerminalView" class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-200 z-10">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -95,9 +95,14 @@
       </div>
     </nav>
 
-    <!-- Main Content - Special handling for Terminal View -->
-    <main :class="['flex-1', isTerminalView ? 'overflow-hidden' : '']">
-      <router-view />
+    <!-- Main Content -->
+    <main :class="['flex-1 flex flex-col min-h-0', isTerminalView ? 'overflow-hidden' : '']">
+      <!-- Chrome-like terminal tab strip (Home + open terminal sessions) -->
+      <TerminalTabStrip v-if="showTerminalTabs" />
+
+      <div class="flex-1 min-h-0">
+        <router-view />
+      </div>
     </main>
 
     <!-- Global Loading Overlay -->
@@ -148,6 +153,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useTerminalStore } from '@/stores/terminalStore'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+import TerminalTabStrip from '@/components/TerminalTabStrip.vue'
 import { useI18n } from 'vue-i18n'
 
 // Stores and router
@@ -166,11 +172,18 @@ const appVersion = ref(APP_VERSION)
 // Computed
 const translatedHello = computed(() => t('message.hello'))
 const isAuthenticated = computed(() => authStore.isAuthenticated)
-const isTerminalView = computed(() => {
-  return route.name === 'terminal' || 
-         route.name === 'terminal-new' || 
-         route.path.includes('/terminal') ||
-         route.path.startsWith('/terminal/')
+// Keep a single "fullscreen" terminal mode behind a meta flag.
+// The multi-tab terminal workspace is now rendered within HomeView.
+const isTerminalView = computed(() => route.meta?.fullscreenTerminal === true)
+
+const showTerminalTabs = computed(() => {
+  if (!isAuthenticated.value) return false
+  if (isTerminalView.value) return false
+
+  // Hide on unauthenticated flows
+  if (route.name === 'login' || route.name === 'forgot-password' || route.name === 'reset-password') return false
+
+  return true
 })
 
 // Methods

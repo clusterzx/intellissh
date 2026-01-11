@@ -337,6 +337,36 @@ const showSftpSidebar = ref(false) // SFTP sidebar toggle state
 const isMobile = ref(window.innerWidth < 768)
 const appVersion = ref(APP_VERSION)
 
+// Cross-tab connection awareness (HomeView can show "Connected" while this tab is active)
+const terminalBroadcastChannelName = 'intellissh-terminal'
+const terminalTabId = (globalThis.crypto && crypto.randomUUID)
+  ? crypto.randomUUID()
+  : `${Date.now()}_${Math.random().toString(16).slice(2)}`
+
+let terminalBroadcast = null
+
+const announceTerminalConnected = (sid) => {
+  if (!terminalBroadcast) return
+  try {
+    terminalBroadcast.postMessage({ type: 'connected', tabId: terminalTabId, sessionId: Number(sid) })
+  } catch (e) {
+    // no-op
+  }
+}
+
+const announceTerminalDisconnected = () => {
+  if (!terminalBroadcast) return
+  try {
+    terminalBroadcast.postMessage({ type: 'disconnected', tabId: terminalTabId })
+  } catch (e) {
+    // no-op
+  }
+}
+
+const handleBeforeUnload = () => {
+  announceTerminalDisconnected()
+}
+
 // Sidebar toggle methods
 const toggleLlmSidebar = () => {
   showSidebar.value = !showSidebar.value
@@ -487,6 +517,7 @@ const connect = async () => {
 
     // Connect to the SSH session
     await terminalStore.connectToSession(sessionId.value)
+    announceTerminalConnected(sessionId.value)
 
     // Initialize terminal if not ready
     if (!terminalReady.value) {
@@ -548,6 +579,7 @@ const disconnect = async () => {
   }
   
   // Disconnect session
+  announceTerminalDisconnected()
   console.log('Calling terminalStore.disconnectSession()...');
   await terminalStore.disconnectSession();
   console.log('Disconnect process initiated.');
@@ -696,6 +728,16 @@ const handleKeydown = (e) => {
 
 
 onMounted(async () => {
+  // Cross-tab: announce connection status to HomeView (and other tabs)
+  if ('BroadcastChannel' in window) {
+    try {
+      terminalBroadcast = new BroadcastChannel(terminalBroadcastChannelName)
+    } catch (e) {
+      // no-op
+    }
+  }
+  window.addEventListener('beforeunload', handleBeforeUnload)
+
   // Load session data
   await loadSession()
 
@@ -712,6 +754,15 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  // Cross-tab cleanup
+  announceTerminalDisconnected()
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+  try {
+    terminalBroadcast?.close()
+  } catch (e) {
+    // no-op
+  }
+
   // Clean up
   window.removeEventListener('resize', handleResize)
   document.removeEventListener('click', closeContextMenu)

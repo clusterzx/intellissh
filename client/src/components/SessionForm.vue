@@ -195,6 +195,41 @@
           </div>
         </div>
 
+        <!-- Tags -->
+        <div>
+          <label class="form-label">{{ $t('message.tags_label') }}</label>
+          <div class="mt-1 space-y-3">
+            <TagMultiSelect
+              v-model="selectedTagIds"
+              :tags="tagStore.tags"
+              :loading="tagStore.loading"
+              :placeholder="$t('message.select_tags_placeholder')"
+            />
+            <p v-if="!tagStore.loading && !tagStore.tags.length" class="text-sm text-slate-500 dark:text-slate-400">
+              {{ $t('message.no_tags_yet') }}
+            </p>
+
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input
+                v-model="newTagName"
+                type="text"
+                class="form-input flex-1"
+                :placeholder="$t('message.new_tag_placeholder')"
+              />
+              <button
+                type="button"
+                class="btn-outline sm:w-auto"
+                @click="createNewTag"
+                :disabled="creatingTag"
+              >
+                <span v-if="creatingTag" class="spinner mr-2"></span>
+                {{ $t('message.add_tag') }}
+              </button>
+            </div>
+            <p v-if="tagError" class="form-error mt-1">{{ tagError }}</p>
+          </div>
+        </div>
+
         <!-- Global Error -->
         <div v-if="globalError" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-3">
           <div class="flex">
@@ -233,6 +268,8 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useSessionStore } from '@/stores/sessionStore'
 import { useCredentialStore } from '@/stores/credentialStore'
+import { useTagStore } from '@/stores/tagStore'
+import TagMultiSelect from '@/components/TagMultiSelect.vue'
 import { useI18n } from 'vue-i18n'
 
 // Props
@@ -249,6 +286,7 @@ const emit = defineEmits(['close', 'saved'])
 // Store
 const sessionStore = useSessionStore()
 const credentialStore = useCredentialStore()
+const tagStore = useTagStore()
 const { t } = useI18n()
 
 // State
@@ -268,6 +306,10 @@ const authMethod = ref('password')
 const errors = ref({})
 const globalError = ref('')
 const loading = ref(false)
+const selectedTagIds = ref([])
+const newTagName = ref('')
+const tagError = ref('')
+const creatingTag = ref(false)
 
 // Computed
 const isEditing = computed(() => !!props.session)
@@ -323,6 +365,8 @@ const handleSubmit = async () => {
       username: form.value.username.trim(),
     };
 
+    sessionData.tags = [...selectedTagIds.value]
+
     if (authMethod.value === 'credential') {
       sessionData.credentialId = selectedCredentialId.value;
       sessionData.password = ''; // Ensure direct password is not sent
@@ -343,6 +387,11 @@ const handleSubmit = async () => {
     }
     
     if (result.success) {
+      try {
+        await tagStore.fetchTags()
+      } catch (fetchError) {
+        console.warn('Failed to refresh tags after saving session:', fetchError)
+      }
       emit('saved', result.session)
     } else {
       globalError.value = result.error || t('message.failed_to_save_session')
@@ -367,6 +416,9 @@ const resetForm = () => {
   }
   authMethod.value = 'password'
   selectedCredentialId.value = null
+  selectedTagIds.value = []
+  newTagName.value = ''
+  tagError.value = ''
   errors.value = {}
   globalError.value = ''
 }
@@ -384,6 +436,12 @@ const loadSession = () => {
       credentialId: props.session.credentialId || null
     };
 
+    selectedTagIds.value = Array.isArray(props.session.tags)
+      ? props.session.tags.map(tag => tag.id)
+      : []
+    newTagName.value = ''
+    tagError.value = ''
+
     // Determine auth method based on existing session
     if (props.session.credentialId) {
       authMethod.value = 'credential';
@@ -398,7 +456,44 @@ const loadSession = () => {
   }
 };
 
+const createNewTag = async () => {
+  tagError.value = ''
+
+  const name = newTagName.value.trim()
+  if (!name) {
+    tagError.value = t('message.tag_name_required')
+    return
+  }
+
+  creatingTag.value = true
+
+  try {
+    const result = await tagStore.createTag(name)
+
+    if (result.success && result.tag) {
+      if (!selectedTagIds.value.includes(result.tag.id)) {
+        selectedTagIds.value.push(result.tag.id)
+      }
+      newTagName.value = ''
+    } else {
+      tagError.value = result.error || t('message.tag_create_failed')
+    }
+  } catch (error) {
+    tagError.value = error.message || t('message.tag_create_failed')
+  } finally {
+    creatingTag.value = false
+  }
+};
+
 // Watchers
+watch(() => props.session, (newSession) => {
+  if (newSession) {
+    loadSession()
+  } else {
+    resetForm()
+  }
+}, { immediate: true })
+
 watch(() => authMethod.value, () => {
   // Clear auth-related errors when method changes
   delete errors.value.password
@@ -430,9 +525,9 @@ watch(selectedCredentialId, (newVal) => {
 
 // Lifecycle
 onMounted(async () => {
-  await credentialStore.fetchCredentials();
-  if (props.session) {
-    loadSession();
-  }
+  await Promise.all([
+    credentialStore.fetchCredentials(),
+    tagStore.tags.length ? Promise.resolve() : tagStore.fetchTags()
+  ])
 });
 </script>

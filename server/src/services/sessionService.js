@@ -1,6 +1,7 @@
 const db = require('../db/database');
 const encryptionService = require('./encryptionService');
 const credentialService = require('./credentialService');
+const tagService = require('./tagService');
 
 class SessionService {
   constructor() {
@@ -18,7 +19,7 @@ class SessionService {
 
   async createSession(userId, sessionData) {
     try {
-      const { name, hostname, port, username, password, privateKey, keyPassphrase, credentialId } = sessionData;
+      const { name, hostname, port, username, password, privateKey, keyPassphrase, credentialId, tags } = sessionData;
 
       let finalUsername = username;
       let encryptedPassword = null;
@@ -62,6 +63,10 @@ class SessionService {
         [userId, name, hostname, port || 22, finalUsername, encryptedPassword, encryptedPrivateKey, finalKeyPassphrase, iv, credentialId]
       );
 
+      if (tags !== undefined) {
+        await tagService.setSessionTags(result.id, userId, tags);
+      }
+
       return await this.getSessionById(result.id, userId);
     } catch (error) {
       console.error('Create session error:', error.message);
@@ -69,14 +74,54 @@ class SessionService {
     }
   }
 
-  async getSessionsByUserId(userId) {
+  async getSessionsByUserId(userId, options = {}) {
     try {
-      const sessions = await db.all(
-        'SELECT id, name, hostname, port, username, console_snapshot, created_at, updated_at, credential_id FROM sessions WHERE user_id = ? ORDER BY updated_at DESC',
-        [userId]
-      );
+      const queryParams = [userId];
+      const filterByTag = options.tagId !== undefined ? Number(options.tagId) : null;
+      const hasTagFilter = Number.isInteger(filterByTag) && filterByTag > 0;
+      let query = `
+        SELECT 
+          s.id,
+          s.name,
+          s.hostname,
+          s.port,
+          s.username,
+          s.console_snapshot,
+          s.created_at,
+          s.updated_at,
+          s.credential_id,
+          CASE WHEN s.password IS NOT NULL AND s.password != '' THEN 1 ELSE 0 END AS has_password,
+          CASE WHEN s.private_key IS NOT NULL AND s.private_key != '' THEN 1 ELSE 0 END AS has_private_key
+        FROM sessions s
+      `;
 
-      return sessions;
+      if (hasTagFilter) {
+        query += ' INNER JOIN session_tags st ON st.session_id = s.id WHERE s.user_id = ? AND st.tag_id = ?';
+        queryParams.push(filterByTag);
+      } else {
+        query += ' WHERE s.user_id = ?';
+      }
+
+      query += ' ORDER BY s.updated_at DESC';
+
+      const sessions = await db.all(query, queryParams);
+
+      const tagsBySession = await tagService.getTagsForSessions(sessions.map(session => session.id), userId);
+
+      return sessions.map(session => ({
+        id: session.id,
+        name: session.name,
+        hostname: session.hostname,
+        port: session.port,
+        username: session.username,
+        console_snapshot: session.console_snapshot,
+        created_at: session.created_at,
+        updated_at: session.updated_at,
+        credential_id: session.credential_id,
+        hasPassword: Boolean(session.has_password),
+        hasPrivateKey: Boolean(session.has_private_key),
+        tags: tagsBySession[session.id] || []
+      }));
     } catch (error) {
       console.error('Get sessions error:', error.message);
       throw error;
@@ -86,13 +131,28 @@ class SessionService {
   async getSessionById(sessionId, userId) {
     try {
       const session = await db.get(
-        'SELECT id, name, hostname, port, username, console_snapshot, created_at, updated_at, credential_id FROM sessions WHERE id = ? AND user_id = ?',
+        `SELECT 
+           s.id,
+           s.name,
+           s.hostname,
+           s.port,
+           s.username,
+           s.console_snapshot,
+           s.created_at,
+           s.updated_at,
+           s.credential_id,
+           CASE WHEN s.password IS NOT NULL AND s.password != '' THEN 1 ELSE 0 END AS has_password,
+           CASE WHEN s.private_key IS NOT NULL AND s.private_key != '' THEN 1 ELSE 0 END AS has_private_key
+         FROM sessions s
+         WHERE s.id = ? AND s.user_id = ?`,
         [sessionId, userId]
       );
 
       if (!session) {
         throw new Error('Session not found');
       }
+
+      const tags = await tagService.getTagsForSession(sessionId, userId);
 
       // Return session without sensitive data for security
       return {
@@ -101,8 +161,9 @@ class SessionService {
         hostname: session.hostname,
         port: session.port,
         username: session.username,
-        hasPassword: !!session.password,
-        hasPrivateKey: !!session.private_key,
+        hasPassword: Boolean(session.has_password),
+        hasPrivateKey: Boolean(session.has_private_key),
+        tags,
         consoleSnapshot: session.console_snapshot,
         created_at: session.created_at,
         updated_at: session.updated_at,
@@ -166,6 +227,8 @@ class SessionService {
         }
       }
 
+      const tags = await tagService.getTagsForSession(session.id, userId);
+
       return {
         id: session.id,
         name: session.name,
@@ -178,7 +241,8 @@ class SessionService {
         consoleSnapshot: session.console_snapshot,
         created_at: session.created_at,
         updated_at: session.updated_at,
-        credentialId: session.credential_id
+        credentialId: session.credential_id,
+        tags
       };
     } catch (error) {
       console.error('Get session with credentials error:', error.message);
@@ -188,7 +252,7 @@ class SessionService {
 
   async updateSession(sessionId, userId, updateData) {
     try {
-      const { name, hostname, port, username, password, privateKey, keyPassphrase, consoleSnapshot, credentialId } = updateData;
+      const { name, hostname, port, username, password, privateKey, keyPassphrase, consoleSnapshot, credentialId, tags } = updateData;
 
       // Get existing session
       const existingSession = await db.get(
@@ -275,6 +339,10 @@ class SessionService {
         [name, hostname, port || 22, finalUsername, encryptedPassword, encryptedPrivateKey, finalKeyPassphrase, iv, updatedConsoleSnapshot, finalCredentialId, sessionId, userId]
       );
 
+      if (tags !== undefined) {
+        await tagService.setSessionTags(sessionId, userId, tags);
+      }
+
       return await this.getSessionById(sessionId, userId);
     } catch (error) {
       console.error('Update session error:', error.message);
@@ -316,7 +384,8 @@ class SessionService {
         password: session.password,
         privateKey: session.privateKey,
         keyPassphrase: session.keyPassphrase,
-        credentialId: session.credentialId
+        credentialId: session.credentialId,
+        tags: Array.isArray(session.tags) ? session.tags.map(tag => tag.id) : []
       };
 
       return await this.createSession(userId, duplicatedSession);
@@ -371,6 +440,24 @@ class SessionService {
 
     if (sessionData.port && (isNaN(sessionData.port) || sessionData.port < 1 || sessionData.port > 65535)) {
       errors.push('Port must be a valid number between 1 and 65535');
+    }
+
+    if (sessionData.tags === null) {
+      sessionData.tags = [];
+    }
+
+    if (sessionData.tags !== undefined) {
+      if (!Array.isArray(sessionData.tags)) {
+        errors.push('Tags must be provided as an array');
+      } else {
+        const hasInvalidTag = sessionData.tags.some(tagId => {
+          const parsed = Number(tagId);
+          return Number.isNaN(parsed) || !Number.isInteger(parsed) || parsed <= 0;
+        });
+        if (hasInvalidTag) {
+          errors.push('Tags must be valid numeric identifiers');
+        }
+      }
     }
 
     if (errors.length > 0) {

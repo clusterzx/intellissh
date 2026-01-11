@@ -18,6 +18,7 @@ const debugRoutes = require('./api/debug');
 const settingsRoutes = require('./api/settings');
 const filesRoutes = require('./api/files');
 const credentialRoutes = require('./api/credentials');
+const tagRoutes = require('./api/tags');
 const handleSocketConnection = require('./socket/terminal');
 const { handleAuthError } = require('./middleware/authMiddleware');
 
@@ -124,6 +125,7 @@ app.use('/api/ssh', debugRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/files', filesRoutes);
 app.use('/api/credentials', credentialRoutes);
+app.use('/api/tags', tagRoutes);
 
 // Handle 404 for API routes
 app.use('/api/*', (req, res) => {

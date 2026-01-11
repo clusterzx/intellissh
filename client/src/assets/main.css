@@ -12,6 +12,11 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     scroll-behavior: smooth;
   }
+
+  /* Ensure full-height layouts work reliably (terminal workspace uses flex + min-h-0) */
+  html, body, #app {
+    height: 100%;
+  }
   
   body {
     @apply bg-slate-50 dark:bg-slate-900 transition-colors duration-200;
