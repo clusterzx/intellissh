@@ -3,11 +3,18 @@ const db = require('./database');
 async function runUserProfileMigration() {
   try {
     console.log('Starting user profile migration...');
-    
+
     // Check if email column exists in users table
-    const usersTableInfo = await db.all("PRAGMA table_info(users)");
-    const emailColumnExists = usersTableInfo.some(column => column.name === 'email');
-    
+    let emailColumnExists = false;
+
+    if (db.type === 'postgres') {
+      const result = await db.all("SELECT column_name FROM information_schema.columns WHERE table_name='users' AND column_name='email'");
+      emailColumnExists = result.length > 0;
+    } else {
+      const usersTableInfo = await db.all("PRAGMA table_info(users)");
+      emailColumnExists = usersTableInfo.some(column => column.name === 'email');
+    }
+
     // Add email column if it doesn't exist
     if (!emailColumnExists) {
       console.log('Adding email column to users table...');
@@ -16,7 +23,7 @@ async function runUserProfileMigration() {
     } else {
       console.log('Email column already exists in users table. No migration needed.');
     }
-    
+
     console.log('User profile migration completed successfully.');
   } catch (error) {
     console.error('User profile migration failed:', error);

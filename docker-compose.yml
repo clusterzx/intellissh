@@ -9,4 +9,31 @@ services:
     volumes:
       # Mount for persistent backend data (SQLite DB, session info, etc.)
       - ./data:/app/server/data
+    environment:
+      # Uncomment for PostgreSQL support
+      # - DB_TYPE=postgres
+      # - DATABASE_URL=postgresql://postgres:change_me@postgres:5432/webssh
+      # OR
+      # - DB_HOST=postgres
+      # - DB_PORT=5432
+      # - DB_USER=postgres
+      # - DB_PASSWORD=change_me
+      # - DB_NAME=webssh
+      - NODE_ENV=production
     restart: unless-stopped
+    # depends_on:
+    #   - postgres
+
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: webssh-postgres
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: change_me
+  #     POSTGRES_DB: webssh
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+
+# volumes:
+#   postgres_data:

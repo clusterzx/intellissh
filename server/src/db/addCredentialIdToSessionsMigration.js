@@ -3,8 +3,15 @@ const db = require('./database');
 async function addCredentialIdToSessionsTable() {
   try {
     // Check if credential_id column exists in sessions table
-    const tableInfo = await db.all("PRAGMA table_info(sessions)");
-    const credentialIdExists = tableInfo.some(column => column.name === 'credential_id');
+    let credentialIdExists = false;
+
+    if (db.type === 'postgres') {
+      const result = await db.all("SELECT column_name FROM information_schema.columns WHERE table_name='sessions' AND column_name='credential_id'");
+      credentialIdExists = result.length > 0;
+    } else {
+      const tableInfo = await db.all("PRAGMA table_info(sessions)");
+      credentialIdExists = tableInfo.some(column => column.name === 'credential_id');
+    }
 
     // Add credential_id column if it doesn't exist
     if (!credentialIdExists) {

@@ -1,9 +1,12 @@
 const db = require('./database');
 
 async function createCredentialsTable() {
+  const PRIMARY_KEY_AUTO = db.type === 'postgres' ? 'SERIAL PRIMARY KEY' : 'INTEGER PRIMARY KEY AUTOINCREMENT';
+  const TIMESTAMP_TYPE = db.type === 'postgres' ? 'TIMESTAMP' : 'DATETIME';
+
   const createTableSql = `
     CREATE TABLE IF NOT EXISTS credentials (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id ${PRIMARY_KEY_AUTO},
       user_id INTEGER NOT NULL,
       name TEXT NOT NULL,
       type TEXT NOT NULL, -- 'password' or 'private_key'
@@ -12,8 +15,8 @@ async function createCredentialsTable() {
       private_key TEXT, -- encrypted
       passphrase TEXT, -- encrypted
       iv TEXT, -- Initialization Vector for encryption
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at ${TIMESTAMP_TYPE} DEFAULT CURRENT_TIMESTAMP,
+      updated_at ${TIMESTAMP_TYPE} DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
       UNIQUE(user_id, name)
     )
