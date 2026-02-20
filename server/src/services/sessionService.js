@@ -7,10 +7,10 @@ class SessionService {
     this.encryptionService = encryptionService;
     this.initialized = false;
   }
-  
+
   async init() {
     if (this.initialized) return;
-    
+
     // Initialize encryption service
     await this.encryptionService.init();
     this.initialized = true;
@@ -31,7 +31,9 @@ class SessionService {
         if (!credential) {
           throw new Error('Referenced credential not found.');
         }
-        finalUsername = credential.username;
+        // We do NOT forcefully override finalUsername = credential.username here.
+        // We use the username provided with the session.
+        if (!finalUsername) finalUsername = credential.username;
         if (credential.type === credentialService.CREDENTIAL_TYPES.PASSWORD) {
           const encrypted = this.encryptionService.encrypt(credential.password);
           encryptedPassword = encrypted.encryptedData;
@@ -142,8 +144,10 @@ class SessionService {
           if (session.private_key && session.iv) {
             privateKey = this.encryptionService.decrypt(session.private_key, session.iv);
           }
-        } else {
-          username = credential.username;
+          // Remove the override so the session's own username is used
+          // If for some reason session.username is empty, fallback to credential.username
+          if (!username) username = credential.username;
+
           if (credential.type === credentialService.CREDENTIAL_TYPES.PASSWORD) {
             password = credential.password;
             console.log(`[SessionService] Using password credential for user: ${username}`);
@@ -208,38 +212,42 @@ class SessionService {
       let finalKeyPassphrase = keyPassphrase !== undefined ? keyPassphrase : existingSession.key_passphrase;
       let finalCredentialId = credentialId !== undefined ? credentialId : existingSession.credential_id;
 
-      // If credentialId is explicitly set to null or a new ID, clear direct credentials
+      // Handle credentialId changes
       if (credentialId !== undefined) {
-        if (credentialId === null) {
+        if (credentialId === null && existingSession.credential_id !== null) {
+          // Switched from a credential to direct auth
           encryptedPassword = null;
           encryptedPrivateKey = null;
           finalKeyPassphrase = null;
           iv = null;
-        } else if (credentialId !== existingSession.credential_id) {
-          // If a new credentialId is provided, fetch and use its details
+        } else if (credentialId !== null && credentialId !== existingSession.credential_id) {
+          // Switched to a different credential
           const credential = await credentialService.getCredentialById(credentialId, userId);
           if (!credential) {
             throw new Error('Referenced credential not found.');
           }
-          finalUsername = credential.username;
+          // Do not override user-specified finalUsername
+          // Allow fallback if it wasn't specified at all
+          if (!finalUsername) finalUsername = credential.username;
+
           if (credential.type === credentialService.CREDENTIAL_TYPES.PASSWORD) {
             const encrypted = this.encryptionService.encrypt(credential.password);
             encryptedPassword = encrypted.encryptedData;
             iv = encrypted.iv;
-            encryptedPrivateKey = null; // Clear private key if switching to password credential
+            encryptedPrivateKey = null;
             finalKeyPassphrase = null;
           } else if (credential.type === credentialService.CREDENTIAL_TYPES.PRIVATE_KEY) {
             const encrypted = this.encryptionService.encrypt(credential.private_key);
             encryptedPrivateKey = encrypted.encryptedData;
             iv = encrypted.iv;
             finalKeyPassphrase = credential.passphrase;
-            encryptedPassword = null; // Clear password if switching to private key credential
+            encryptedPassword = null;
           }
         }
-      } else if (credentialId === undefined && (password !== undefined || privateKey !== undefined)) {
-        // If credentialId is not changed, but direct credentials are provided, clear credentialId
-        finalCredentialId = null;
-        // Update password if provided
+      }
+
+      // Handle direct credentials
+      if (finalCredentialId === null) {
         if (password !== undefined) {
           if (password) {
             const encrypted = this.encryptionService.encrypt(password);
@@ -250,7 +258,6 @@ class SessionService {
           }
         }
 
-        // Update private key if provided
         if (privateKey !== undefined) {
           if (privateKey) {
             const encrypted = this.encryptionService.encrypt(privateKey);
@@ -260,6 +267,22 @@ class SessionService {
             encryptedPrivateKey = null;
           }
         }
+      } else if (password !== undefined || privateKey !== undefined) {
+        // If we are using a credential but explicitly passed new direct credentials, 
+        // we should probably clear the credentialId
+        if (password || privateKey) {
+          finalCredentialId = null;
+          if (password) {
+            const encrypted = this.encryptionService.encrypt(password);
+            encryptedPassword = encrypted.encryptedData;
+            iv = encrypted.iv;
+          }
+          if (privateKey) {
+            const encrypted = this.encryptionService.encrypt(privateKey);
+            encryptedPrivateKey = encrypted.encryptedData;
+            if (!iv) iv = encrypted.iv;
+          }
+        }
       }
 
       // Include console snapshot if provided
@@ -267,7 +290,7 @@ class SessionService {
       if (consoleSnapshot !== undefined) {
         updatedConsoleSnapshot = consoleSnapshot;
       }
-      
+
       await db.run(
         `UPDATE sessions 
          SET name = ?, hostname = ?, port = ?, username = ?, password = ?, private_key = ?, key_passphrase = ?, iv = ?, console_snapshot = ?, credential_id = ?, updated_at = CURRENT_TIMESTAMP
@@ -303,7 +326,7 @@ class SessionService {
   async duplicateSession(sessionId, userId, newName) {
     try {
       const session = await this.getSessionWithCredentials(sessionId, userId);
-      
+
       if (!session) {
         throw new Error('Session not found');
       }

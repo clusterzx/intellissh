@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex flex-col h-full bg-slate-800 text-slate-100 dark:bg-slate-900 border-l border-slate-700/50">
     <!-- Header with Connection Controls -->
     <div class="flex-shrink-0 p-3 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
       <div class="text-white">

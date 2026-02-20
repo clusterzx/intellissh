@@ -325,14 +325,29 @@ const handleSubmit = async () => {
 
     if (authMethod.value === 'credential') {
       sessionData.credentialId = selectedCredentialId.value;
-      sessionData.password = ''; // Ensure direct password is not sent
-      sessionData.privateKey = ''; // Ensure direct private key is not sent
-      sessionData.keyPassphrase = ''; // Ensure direct passphrase is not sent
+      sessionData.password = '';
+      sessionData.privateKey = '';
+      sessionData.keyPassphrase = '';
     } else {
-      sessionData.password = authMethod.value === 'password' ? form.value.password : '';
-      sessionData.privateKey = authMethod.value === 'key' ? form.value.privateKey.trim() : '';
-      sessionData.keyPassphrase = authMethod.value === 'key' ? form.value.keyPassphrase : '';
-      sessionData.credentialId = null; // Ensure credentialId is not sent if not using a saved credential
+      sessionData.credentialId = null;
+      
+      if (authMethod.value === 'password') {
+        if (form.value.password) sessionData.password = form.value.password;
+        sessionData.privateKey = '';
+        sessionData.keyPassphrase = '';
+      } else if (authMethod.value === 'key') {
+        if (form.value.privateKey) {
+          sessionData.privateKey = form.value.privateKey.trim();
+          sessionData.keyPassphrase = form.value.keyPassphrase || '';
+        } else if (form.value.keyPassphrase) {
+          sessionData.keyPassphrase = form.value.keyPassphrase;
+        }
+        sessionData.password = '';
+      } else if (authMethod.value === 'agent') {
+        sessionData.password = '';
+        sessionData.privateKey = '';
+        sessionData.keyPassphrase = '';
+      }
     }
     
     let result

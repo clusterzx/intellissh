@@ -4,7 +4,6 @@
       <div class="text-center mb-8">
         <div class="flex justify-center items-center mb-4">
           <h1 class="text-3xl font-bold text-slate-900 dark:text-white">{{ $t('message.ssh_debug_tool') }}</h1>
-          <DarkModeToggle class="ml-4" />
         </div>
         <p class="mt-2 text-lg text-slate-600 dark:text-slate-400">{{ $t('message.test_ssh_connections') }}</p>
       </div>
@@ -158,7 +157,6 @@
 <script setup>
 import { ref } from 'vue'
 import axios from 'axios'
-import DarkModeToggle from '@/components/DarkModeToggle.vue'
 import { useI18n } from 'vue-i18n'
 
 // Form state
